@@ -1,0 +1,17 @@
+{
+  "name": "Sistema Cafeteria Pro",
+  "short_name": "Café PDV",
+  "description": "PDV e Gestão de Cafeteria",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#14532d",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/924/924412.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
