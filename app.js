@@ -139,3 +139,31 @@ if ('serviceWorker' in navigator) {
         }).catch(err => console.log('Erro no Service Worker:', err));
     });
 }
+/* Configurações exclusivas para a Impressora Térmica (80mm) */
+@media print {
+    @page {
+        margin: 0;
+        size: 80mm 297mm; /* Tamanho padrão de bobina térmica */
+    }
+    body {
+        background-color: white;
+    }
+    /* Esconde o sistema todo */
+    #app-container {
+        display: none !important;
+    }
+    /* Mostra apenas o recibo */
+    #print-section {
+        display: block !important;
+        width: 80mm;
+        padding: 5mm;
+        font-family: 'Courier New', Courier, monospace; /* Fonte com espaçamento igual, ideal para recibos */
+        color: black;
+        font-size: 12px;
+    }
+}
+
+/* Esconde o recibo na tela normal */
+#print-section {
+    display: none;
+}
