@@ -8,7 +8,7 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="style.css">
     <style id="dynamic-theme">
-        :root { --theme-color: #14532d; } /* Verde Padrão */
+        :root { --theme-color: #14532d; }
         .theme-bg { background-color: var(--theme-color) !important; }
         .theme-text { color: var(--theme-color) !important; }
     </style>
@@ -17,7 +17,7 @@
 
     <div id="login-screen" class="theme-bg absolute inset-0 z-50 flex items-center justify-center flex-col">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-96 max-w-[90%] text-center">
-            <i class="ph-fill ph-coffee text-6xl theme-text mb-2"></i>
+            <img id="app-logo-login" src="https://cdn-icons-png.flaticon.com/512/924/924412.png" alt="Logo" class="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-gray-100 shadow-sm">
             <h2 class="text-2xl font-bold text-gray-800 mb-1">Matsucafe</h2>
             <p class="text-gray-500 mb-6 text-sm">Acesso Restrito</p>
             
@@ -32,7 +32,8 @@
     <div id="app-container" class="flex w-full h-full">
         
         <aside class="hidden md:flex flex-col w-24 theme-bg text-white items-center py-6 gap-8 shadow-xl z-30">
-            <i class="ph-fill ph-coffee text-4xl mb-4"></i>
+            <img id="app-logo-sidebar" src="https://cdn-icons-png.flaticon.com/512/924/924412.png" alt="Logo" class="w-16 h-16 rounded-full object-cover mb-4 border-2 border-white/50 bg-white">
+            
             <button id="nav-pdv" class="flex flex-col items-center gap-1 text-white hover:opacity-75 transition"><i class="ph ph-shopping-cart text-2xl"></i><span class="text-xs">PDV</span></button>
             <button id="nav-kds" class="flex flex-col items-center gap-1 text-white hover:opacity-75 transition"><i class="ph ph-cooking-pot text-2xl"></i><span class="text-xs">KDS</span></button>
             
@@ -62,9 +63,9 @@
             <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-8">
                 <h3 class="font-bold text-lg mb-4">Adicionar Novo Produto</h3>
                 <div class="flex gap-4">
-                    <input type="text" id="new-name" placeholder="Nome (Ex: Bolo de Cenoura)" class="flex-1 p-3 rounded-xl border border-gray-300">
-                    <input type="number" id="new-price" placeholder="Preço (Ex: 12.50)" class="w-32 p-3 rounded-xl border border-gray-300">
-                    <button id="btn-add-product" class="theme-bg text-white px-6 py-3 rounded-xl font-bold hover:opacity-90">Salvar</button>
+                    <input type="text" id="new-name" placeholder="Nome" class="flex-1 p-3 rounded-xl border border-gray-300">
+                    <input type="number" id="new-price" placeholder="Preço" class="w-32 p-3 rounded-xl border border-gray-300">
+                    <button id="btn-add-product" class="theme-bg text-white px-6 py-3 rounded-xl font-bold">Salvar</button>
                 </div>
             </div>
             <h3 class="font-bold text-lg mb-4">Produtos Cadastrados</h3>
@@ -74,13 +75,24 @@
         <main id="tab-settings" class="hidden flex-1 flex flex-col h-full bg-white p-8 overflow-y-auto z-20">
             <h2 class="text-3xl font-bold text-gray-800 mb-6">Configurações do Sistema</h2>
             
-            <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-8 max-w-lg">
-                <h3 class="font-bold text-lg mb-2 flex items-center gap-2"><i class="ph ph-palette text-xl"></i> Cor Principal da Interface</h3>
-                <p class="text-sm text-gray-500 mb-4">Mude a cor do menu lateral e dos botões.</p>
-                
-                <div class="flex items-center gap-4">
-                    <input type="color" id="theme-color-picker" value="#14532d" class="w-16 h-16 rounded cursor-pointer border-0 p-0">
-                    <button id="btn-save-theme" class="theme-bg text-white px-6 py-3 rounded-xl font-bold hover:opacity-90">Aplicar e Salvar Cor</button>
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl">
+                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200">
+                    <h3 class="font-bold text-lg mb-2 flex items-center gap-2"><i class="ph ph-palette text-xl"></i> Cor Principal</h3>
+                    <p class="text-sm text-gray-500 mb-4">Mude a cor do menu lateral e dos botões.</p>
+                    <div class="flex items-center gap-4">
+                        <input type="color" id="theme-color-picker" value="#14532d" class="w-16 h-16 rounded cursor-pointer border-0 p-0">
+                        <button id="btn-save-theme" class="theme-bg text-white px-6 py-3 rounded-xl font-bold">Salvar Cor</button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200">
+                    <h3 class="font-bold text-lg mb-2 flex items-center gap-2"><i class="ph ph-image text-xl"></i> Logo da Empresa</h3>
+                    <p class="text-sm text-gray-500 mb-4">Envie uma imagem JPG ou PNG (Recomendado: quadrada).</p>
+                    <div class="flex flex-col gap-3">
+                        <input type="file" id="logo-file-input" accept="image/*" class="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300 cursor-pointer">
+                        <button id="btn-upload-logo" class="bg-gray-800 text-white px-6 py-3 rounded-xl font-bold mt-2 hover:bg-gray-700">Fazer Upload da Logo</button>
+                        <p id="upload-status" class="text-sm text-green-700 font-bold hidden">Logo atualizada com sucesso!</p>
+                    </div>
                 </div>
             </div>
         </main>
