@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matsucafe PDV</title>
+    <title>Matsucafe PDV Pro</title>
     <link rel="icon" href="data:,">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -12,140 +12,151 @@
         :root { --theme-color: #14532d; }
         .theme-bg { background-color: var(--theme-color) !important; }
         .theme-text { color: var(--theme-color) !important; }
+        .theme-border { border-color: var(--theme-color) !important; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans flex h-screen overflow-hidden select-none">
+<body class="bg-gray-100 text-gray-800 font-sans flex h-screen overflow-hidden select-none">
 
     <div id="login-screen" class="theme-bg absolute inset-0 z-50 flex items-center justify-center flex-col">
-        <form id="login-form" class="bg-white p-8 rounded-3xl shadow-2xl w-96 max-w-[90%] text-center">
-            <img id="app-logo-login" src="https://cdn-icons-png.flaticon.com/512/924/924412.png" alt="Logo" class="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-gray-100 shadow-sm">
-            <h2 class="text-2xl font-bold text-gray-800 mb-1">Matsucafe</h2>
-            <p class="text-gray-500 mb-6 text-sm">Acesso Restrito</p>
+        <form id="login-form" class="bg-white p-10 rounded-[2rem] shadow-2xl w-[400px] max-w-[90%] text-center transform transition hover:scale-105 duration-300">
+            <img id="app-logo-login" src="https://images.unsplash.com/photo-1559925313-b3a015bdca3b?auto=format&fit=crop&w=200&q=80" alt="Logo" class="w-28 h-28 rounded-full object-cover mx-auto mb-6 border-4 theme-border shadow-md">
+            <h2 class="text-3xl font-black text-gray-800 mb-1 tracking-tight">Matsucafe</h2>
+            <p class="text-gray-400 mb-8 font-medium">Sistema de Gestão Integrada</p>
             
-            <input type="email" id="login-email" placeholder="Seu e-mail" required class="w-full mb-3 p-3 border border-gray-300 rounded-xl focus:outline-none">
-            <input type="password" id="login-password" placeholder="Sua senha" required class="w-full mb-6 p-3 border border-gray-300 rounded-xl focus:outline-none">
+            <div class="space-y-4">
+                <input type="email" id="login-email" placeholder="E-mail de acesso" required class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-700 transition">
+                <input type="password" id="login-password" placeholder="Senha" required class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-700 transition">
+            </div>
             
-            <button type="submit" class="w-full theme-bg text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition">Entrar</button>
-            <p id="login-error" class="text-red-500 text-sm mt-4 hidden">E-mail ou senha incorretos.</p>
+            <button type="submit" class="w-full theme-bg text-white font-bold text-lg py-4 rounded-2xl shadow-xl hover:opacity-90 transition mt-6">Entrar no Sistema</button>
+            <p id="login-error" class="text-red-500 font-bold text-sm mt-4 hidden">E-mail ou senha incorretos.</p>
         </form>
     </div>
 
     <div id="app-container" class="flex w-full h-full">
         
-        <aside class="hidden md:flex flex-col w-24 theme-bg text-white items-center py-6 gap-6 shadow-xl z-30 overflow-y-auto hide-scrollbar">
-            <img id="app-logo-sidebar" src="https://cdn-icons-png.flaticon.com/512/924/924412.png" alt="Logo" class="w-16 h-16 rounded-full object-cover mb-2 border-2 border-white/50 bg-white">
+        <aside class="hidden md:flex flex-col w-24 theme-bg text-white items-center py-6 gap-6 shadow-2xl z-30 overflow-y-auto hide-scrollbar rounded-r-3xl">
+            <img id="app-logo-sidebar" src="https://images.unsplash.com/photo-1559925313-b3a015bdca3b?auto=format&fit=crop&w=200&q=80" alt="Logo" class="w-14 h-14 rounded-full object-cover mb-4 border-2 border-white/30 bg-white shadow-inner">
             
-            <button id="nav-pdv" class="flex flex-col items-center gap-1 text-white hover:opacity-75 transition"><i class="ph ph-shopping-cart text-2xl"></i><span class="text-[10px]">PDV</span></button>
-            <button id="nav-kds" class="flex flex-col items-center gap-1 text-white hover:opacity-75 transition"><i class="ph ph-cooking-pot text-2xl"></i><span class="text-[10px]">KDS</span></button>
+            <button id="nav-pdv" class="w-16 h-16 flex flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-shopping-cart text-2xl"></i><span class="text-[10px] font-medium">PDV</span></button>
+            <button id="nav-kds" class="w-16 h-16 flex flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-cooking-pot text-2xl"></i><span class="text-[10px] font-medium">KDS</span></button>
             
-            <button id="nav-estoque" class="admin-only hidden flex-col items-center gap-1 text-white hover:opacity-75 transition"><i class="ph ph-package text-2xl"></i><span class="text-[10px]">Estoque</span></button>
-            <button id="nav-menu" class="admin-only hidden flex-col items-center gap-1 text-white hover:opacity-75 transition"><i class="ph ph-list-magnifying-glass text-2xl"></i><span class="text-[10px]">Cardápio</span></button>
-            <button id="nav-financeiro" class="admin-only hidden flex-col items-center gap-1 text-white hover:opacity-75 transition"><i class="ph ph-chart-line-up text-2xl"></i><span class="text-[10px]">Financeiro</span></button>
-            <button id="nav-settings" class="admin-only hidden flex-col items-center gap-1 text-white hover:opacity-75 transition"><i class="ph ph-gear text-2xl"></i><span class="text-[10px]">Ajustes</span></button>
+            <button id="nav-estoque" class="admin-only hidden w-16 h-16 flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-package text-2xl"></i><span class="text-[10px] font-medium">Estoque</span></button>
+            <button id="nav-menu" class="admin-only hidden w-16 h-16 flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-list-magnifying-glass text-2xl"></i><span class="text-[10px] font-medium">Cardápio</span></button>
+            <button id="nav-financeiro" class="admin-only hidden w-16 h-16 flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-chart-line-up text-2xl"></i><span class="text-[10px] font-medium">Finanças</span></button>
+            <button id="nav-settings" class="admin-only hidden w-16 h-16 flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-gear text-2xl"></i><span class="text-[10px] font-medium">Ajustes</span></button>
             
-            <button id="btn-logout" class="flex flex-col items-center gap-1 text-gray-300 mt-auto hover:text-white transition"><i class="ph ph-sign-out text-2xl"></i><span class="text-[10px]">Sair</span></button>
+            <button id="btn-logout" class="w-16 h-16 flex flex-col items-center justify-center gap-1 rounded-2xl hover:bg-red-500/20 text-red-200 hover:text-red-100 transition mt-auto"><i class="ph ph-sign-out text-2xl"></i><span class="text-[10px] font-medium">Sair</span></button>
         </aside>
 
-        <main id="tab-pdv" class="flex-1 flex flex-col h-full overflow-hidden">
-            <header class="bg-white shadow-sm p-4 flex justify-between items-center z-10">
-                <h1 class="text-xl font-bold theme-text">Frente de Caixa</h1>
-                <span id="user-badge" class="bg-gray-100 px-3 py-1 rounded-full text-xs font-bold text-gray-600">Caixa</span>
+        <main id="tab-pdv" class="flex-1 flex flex-col h-full overflow-hidden bg-gray-50">
+            <header class="bg-white shadow-sm p-5 flex justify-between items-center z-10">
+                <div>
+                    <h1 class="text-2xl font-black text-gray-800">Frente de Caixa</h1>
+                    <p class="text-sm text-gray-400 font-medium">Selecione os produtos</p>
+                </div>
+                <span id="user-badge" class="px-4 py-2 rounded-xl text-sm font-bold shadow-sm">Caixa</span>
             </header>
-            <div id="product-grid" class="flex-1 overflow-y-auto p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 hide-scrollbar"></div>
+            
+            <div id="product-grid" class="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 hide-scrollbar content-start">
+                </div>
         </main>
 
-        <main id="tab-kds" class="hidden flex-1 flex flex-col h-full bg-gray-100 p-6 overflow-y-auto z-20">
-            <header class="mb-6 flex justify-between items-center">
-                <h2 class="text-3xl font-bold text-gray-800">Cozinha (KDS)</h2>
+        <main id="tab-kds" class="hidden flex-1 flex flex-col h-full bg-gray-100 p-8 overflow-y-auto z-20">
+            <header class="mb-8 flex justify-between items-center">
+                <h2 class="text-3xl font-black text-gray-800">Cozinha (KDS)</h2>
+                <span class="bg-yellow-400 text-yellow-900 px-4 py-2 rounded-xl font-bold text-sm shadow">Monitoramento em Tempo Real</span>
             </header>
             <div id="kds-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
         </main>
 
-        <main id="tab-estoque" class="hidden flex-1 flex flex-col h-full bg-white p-8 overflow-y-auto z-20">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Controle de Estoque</h2>
-            <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-8">
-                <h3 class="font-bold text-lg mb-4">Adicionar Item</h3>
+        <main id="tab-estoque" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
+            <h2 class="text-3xl font-black text-gray-800 mb-8">Controle de Estoque</h2>
+            <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 mb-8">
+                <h3 class="font-bold text-lg mb-4 text-gray-700">Novo Insumo</h3>
                 <div class="flex gap-4">
-                    <input type="text" id="new-stock-name" placeholder="Insumo (Ex: Copos P)" class="flex-1 p-3 rounded-xl border border-gray-300">
-                    <input type="number" id="new-stock-qty" placeholder="Qtd (Ex: 100)" class="w-32 p-3 rounded-xl border border-gray-300">
-                    <button id="btn-add-stock" class="theme-bg text-white px-6 py-3 rounded-xl font-bold">Salvar</button>
+                    <input type="text" id="new-stock-name" placeholder="Ex: Copo 300ml" class="flex-1 p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                    <input type="number" id="new-stock-qty" placeholder="Qtd" class="w-32 p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                    <button id="btn-add-stock" class="theme-bg text-white px-8 rounded-2xl font-bold shadow-md hover:opacity-90">Adicionar</button>
                 </div>
             </div>
-            <div id="admin-stock-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            <div id="admin-stock-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </main>
 
-        <main id="tab-menu" class="hidden flex-1 flex flex-col h-full bg-white p-8 overflow-y-auto z-20">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Gestão de Cardápio</h2>
-            <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-8">
-                <h3 class="font-bold text-lg mb-4">Adicionar Novo Produto</h3>
-                <div class="flex gap-4">
-                    <input type="text" id="new-name" placeholder="Nome" class="flex-1 p-3 rounded-xl border border-gray-300">
-                    <input type="number" id="new-price" placeholder="Preço" class="w-32 p-3 rounded-xl border border-gray-300">
-                    <button id="btn-add-product" class="theme-bg text-white px-6 py-3 rounded-xl font-bold">Salvar</button>
+        <main id="tab-menu" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
+            <h2 class="text-3xl font-black text-gray-800 mb-8">Gestão de Cardápio</h2>
+            <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 mb-8">
+                <h3 class="font-bold text-lg mb-4 text-gray-700">Cadastrar Produto</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <input type="text" id="new-name" placeholder="Nome do Produto" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                    <input type="number" id="new-price" placeholder="Preço (Ex: 14.50)" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                    <input type="text" id="new-image" placeholder="URL da Imagem (Opcional)" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
                 </div>
+                <button id="btn-add-product" class="w-full theme-bg text-white py-4 rounded-2xl font-bold shadow-md hover:opacity-90">Salvar no Cardápio</button>
             </div>
-            <div id="admin-product-list" class="flex flex-col gap-3"></div>
+            <div id="admin-product-list" class="flex flex-col gap-4"></div>
         </main>
 
-        <main id="tab-financeiro" class="hidden flex-1 flex flex-col h-full bg-gray-100 p-8 overflow-y-auto z-20">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Dashboard Financeiro</h2>
-            
+        <main id="tab-financeiro" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
+            <h2 class="text-3xl font-black text-gray-800 mb-8">Dashboard Financeiro</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-8 border-green-700">
-                    <p class="text-gray-500 text-sm font-bold mb-1">Faturamento Total</p>
-                    <h3 id="dash-revenue" class="text-3xl font-black text-gray-800">R$ 0,00</h3>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border-b-4 border-green-500">
+                    <p class="text-gray-400 text-sm font-bold mb-2 uppercase tracking-wide">Faturamento</p>
+                    <h3 id="dash-revenue" class="text-4xl font-black text-gray-800">R$ 0,00</h3>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-8 border-blue-600">
-                    <p class="text-gray-500 text-sm font-bold mb-1">Pedidos Realizados</p>
-                    <h3 id="dash-orders" class="text-3xl font-black text-gray-800">0</h3>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border-b-4 border-blue-500">
+                    <p class="text-gray-400 text-sm font-bold mb-2 uppercase tracking-wide">Pedidos</p>
+                    <h3 id="dash-orders" class="text-4xl font-black text-gray-800">0</h3>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-8 border-purple-600">
-                    <p class="text-gray-500 text-sm font-bold mb-1">Ticket Médio</p>
-                    <h3 id="dash-ticket" class="text-3xl font-black text-gray-800">R$ 0,00</h3>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border-b-4 border-purple-500">
+                    <p class="text-gray-400 text-sm font-bold mb-2 uppercase tracking-wide">Ticket Médio</p>
+                    <h3 id="dash-ticket" class="text-4xl font-black text-gray-800">R$ 0,00</h3>
                 </div>
             </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-sm">
-                <h3 class="font-bold text-lg mb-4">Histórico de Vendas</h3>
-                <div id="sales-history-list" class="flex flex-col gap-2">
-                    </div>
+            <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex-1 overflow-y-auto">
+                <h3 class="font-bold text-lg mb-6 text-gray-700">Histórico Recente</h3>
+                <div id="sales-history-list" class="flex flex-col gap-3"></div>
             </div>
         </main>
 
-        <main id="tab-settings" class="hidden flex-1 flex flex-col h-full bg-white p-8 overflow-y-auto z-20">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Configurações</h2>
+        <main id="tab-settings" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
+            <h2 class="text-3xl font-black text-gray-800 mb-8">Configurações</h2>
             <div class="grid md:grid-cols-2 gap-8 max-w-4xl">
-                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200">
-                    <h3 class="font-bold text-lg mb-2"><i class="ph ph-palette"></i> Cor Principal</h3>
-                    <div class="flex items-center gap-4 mt-4">
-                        <input type="color" id="theme-color-picker" value="#14532d" class="w-16 h-16 rounded cursor-pointer border-0 p-0">
-                        <button id="btn-save-theme" class="theme-bg text-white px-6 py-3 rounded-xl font-bold">Salvar Cor</button>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                    <h3 class="font-black text-xl mb-2 text-gray-800 flex items-center gap-2"><i class="ph ph-palette theme-text"></i> Identidade Visual</h3>
+                    <p class="text-sm text-gray-500 mb-6">Altere a cor principal de todos os botões e menus do sistema.</p>
+                    <div class="flex items-center gap-4">
+                        <input type="color" id="theme-color-picker" value="#14532d" class="w-16 h-16 rounded-2xl cursor-pointer border-0 p-0 shadow-sm">
+                        <button id="btn-save-theme" class="theme-bg text-white px-6 py-4 rounded-2xl font-bold shadow-md">Aplicar Cor</button>
                     </div>
                 </div>
-                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200">
-                    <h3 class="font-bold text-lg mb-2"><i class="ph ph-image"></i> Logo da Empresa</h3>
-                    <div class="flex flex-col gap-3 mt-4">
-                        <input type="file" id="logo-file-input" accept="image/*" class="text-sm">
-                        <button id="btn-upload-logo" class="bg-gray-800 text-white px-6 py-3 rounded-xl font-bold mt-2">Upload da Logo</button>
-                        <p id="upload-status" class="text-sm text-green-700 font-bold hidden">Logo atualizada!</p>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                    <h3 class="font-black text-xl mb-2 text-gray-800 flex items-center gap-2"><i class="ph ph-image theme-text"></i> Logo da Empresa</h3>
+                    <p class="text-sm text-gray-500 mb-6">A imagem aparecerá no login e no menu.</p>
+                    <div class="flex flex-col gap-4">
+                        <input type="file" id="logo-file-input" accept="image/*" class="text-sm file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer">
+                        <button id="btn-upload-logo" class="bg-gray-800 text-white px-6 py-4 rounded-2xl font-bold shadow-md">Fazer Upload</button>
+                        <p id="upload-status" class="text-sm text-green-600 font-bold hidden bg-green-50 p-3 rounded-xl">Logo atualizada!</p>
                     </div>
                 </div>
             </div>
         </main>
 
-        <aside id="cart-panel" class="w-full md:w-96 bg-white shadow-2xl flex flex-col z-20">
-            <div class="p-4 theme-bg text-white flex justify-between items-center">
-                <h2 class="text-lg font-bold flex items-center gap-2"><i class="ph ph-receipt"></i> Pedido Atual</h2>
+        <aside id="cart-panel" class="w-full md:w-[400px] bg-white shadow-[-10px_0_30px_rgba(0,0,0,0.05)] flex flex-col z-20 border-l border-gray-100">
+            <div class="p-6 theme-bg text-white">
+                <h2 class="text-xl font-black flex items-center gap-3"><i class="ph ph-receipt text-2xl"></i> Resumo do Pedido</h2>
             </div>
-            <div id="cart-items" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 hide-scrollbar"></div>
-            <div class="p-4 border-t border-gray-100 bg-gray-50">
-                <div class="flex justify-between mb-4 text-xl font-bold text-gray-900">
-                    <span>Total</span><span id="total">R$ 0,00</span>
+            <div id="cart-items" class="flex-1 overflow-y-auto p-6 flex flex-col gap-4 hide-scrollbar">
+                <p class="text-center text-gray-400 mt-10 font-medium">O carrinho está vazio.</p>
+            </div>
+            <div class="p-6 bg-gray-50 border-t border-gray-200 rounded-tl-3xl">
+                <div class="flex justify-between mb-6 text-2xl font-black text-gray-800">
+                    <span>Total</span><span id="total" class="theme-text">R$ 0,00</span>
                 </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <button id="btn-clear" class="py-3 px-4 bg-red-100 text-red-700 font-bold rounded-xl">Cancelar</button>
-                    <button id="btn-checkout" class="py-3 px-4 theme-bg text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 hover:opacity-90">
-                        <i class="ph ph-wallet"></i> Cobrar
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="btn-clear" class="py-4 px-4 bg-white border-2 border-gray-200 text-gray-600 font-bold rounded-2xl hover:bg-gray-100 transition">Cancelar</button>
+                    <button id="btn-checkout" class="py-4 px-4 theme-bg text-white font-bold rounded-2xl shadow-xl flex items-center justify-center gap-2 hover:opacity-90 transition transform hover:-translate-y-1">
+                        <i class="ph ph-wallet text-xl"></i> Cobrar
                     </button>
                 </div>
             </div>
