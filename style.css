@@ -25,39 +25,35 @@
 
 /* 2. Regras ativadas apenas na hora da impressão */
 @media print {
-    /* Esconde todo o sistema para não sair na bobina */
     #app-container, #login-screen {
         display: none !important;
     }
 
-    /* Mostra e formata apenas o recibo */
     #print-section {
         display: block !important;
-        width: 80mm !important; /* Largura da sua bobina */
-        height: auto !important; /* Deixa o papel descer o quanto precisar */
-        overflow: visible !important;
+        width: 80mm !important;
+        height: auto !important;
         margin: 0;
         padding: 2mm;
         color: #000 !important;
         font-family: 'Courier New', Courier, monospace;
-        font-weight: bold; /* Negrito para ficar bem legível */
+        font-weight: bold;
     }
 
-    /* Força o navegador a não cortar o papel */
     html, body {
         background-color: white !important;
         height: auto !important;
         overflow: visible !important;
     }
 
-    /* Melhora a nitidez para impressoras térmicas */
     * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
 
-    /* Tira as margens automáticas do Windows */
+    /* Força o navegador a entender que é uma bobina térmica longa */
     @page {
         margin: 0; 
+        size: 80mm 300mm; 
     }
 }
