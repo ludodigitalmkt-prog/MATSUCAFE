@@ -11,6 +11,7 @@
 .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
 }
+
 /* ==========================================
    CONFIGURAÇÕES DE IMPRESSÃO (RECIBO TÉRMICO)
    ========================================== */
@@ -22,53 +23,40 @@
     }
 }
 
-/* 2. Regras ativadas apenas na hora que a janela de impressão abre */
+/* 2. Regras ativadas apenas na hora da impressão */
 @media print {
-    /* Esconde o resto do sistema */
+    /* Esconde todo o sistema para não sair na bobina */
     #app-container, #login-screen {
         display: none !important;
     }
 
+    /* Mostra e formata apenas o recibo */
     #print-section {
         display: block !important;
         width: 80mm !important; /* Largura da sua bobina */
-        height: auto !important; /* Permite que o recibo cresça conforme os itens */
+        height: auto !important; /* Deixa o papel descer o quanto precisar */
         overflow: visible !important;
         margin: 0;
         padding: 2mm;
+        color: #000 !important;
         font-family: 'Courier New', Courier, monospace;
-        font-weight: bold;
-        color: #000;
+        font-weight: bold; /* Negrito para ficar bem legível */
     }
 
-    /* Remove qualquer limite de página do navegador */
+    /* Força o navegador a não cortar o papel */
     html, body {
+        background-color: white !important;
         height: auto !important;
         overflow: visible !important;
     }
-}
-    /* Esconde todo o sistema (menus, botões, carrinho, cor de fundo) */
-    body {
-        background-color: white !important;
-    }
-    #app-container, #login-screen {
-        display: none !important;
+
+    /* Melhora a nitidez para impressoras térmicas */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
-    /* Mostra APENAS o recibo e formata para a largura da maquininha */
-    #print-section {
-        display: block !important;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 80mm; /* Largura padrão de impressora térmica. Se a sua for menor, mude para 58mm */
-        padding: 5mm; /* Uma pequena margem para o texto não colar na borda do papel */
-        margin: 0;
-        color: black;
-        font-family: 'Courier New', Courier, monospace; /* Fonte clássica de recibo */
-    }
-
-    /* Remove cabeçalhos e rodapés automáticos do navegador (URL, data, página 1/1) */
+    /* Tira as margens automáticas do Windows */
     @page {
         margin: 0; 
     }
