@@ -7,36 +7,45 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="style.css">
+    <style id="dynamic-theme">
+        :root { --theme-color: #14532d; } /* Verde Padrão */
+        .theme-bg { background-color: var(--theme-color) !important; }
+        .theme-text { color: var(--theme-color) !important; }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans flex h-screen overflow-hidden select-none">
 
-    <div id="login-screen" class="absolute inset-0 bg-green-900 z-50 flex items-center justify-center flex-col">
+    <div id="login-screen" class="theme-bg absolute inset-0 z-50 flex items-center justify-center flex-col">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-96 max-w-[90%] text-center">
-            <i class="ph-fill ph-coffee text-6xl text-green-900 mb-2"></i>
+            <i class="ph-fill ph-coffee text-6xl theme-text mb-2"></i>
             <h2 class="text-2xl font-bold text-gray-800 mb-1">Matsucafe</h2>
             <p class="text-gray-500 mb-6 text-sm">Acesso Restrito</p>
             
             <input type="email" id="login-email" placeholder="Seu e-mail" class="w-full mb-3 p-3 border border-gray-300 rounded-xl">
             <input type="password" id="login-password" placeholder="Sua senha" class="w-full mb-6 p-3 border border-gray-300 rounded-xl">
             
-            <button id="btn-login" class="w-full bg-green-900 text-white font-bold py-3 rounded-xl hover:bg-green-800 shadow-lg">Entrar</button>
+            <button id="btn-login" class="w-full theme-bg text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition">Entrar</button>
             <p id="login-error" class="text-red-500 text-sm mt-4 hidden">E-mail ou senha incorretos.</p>
         </div>
     </div>
 
     <div id="app-container" class="flex w-full h-full">
         
-        <aside class="hidden md:flex flex-col w-24 bg-green-900 text-white items-center py-6 gap-8 shadow-xl z-30">
+        <aside class="hidden md:flex flex-col w-24 theme-bg text-white items-center py-6 gap-8 shadow-xl z-30">
             <i class="ph-fill ph-coffee text-4xl mb-4"></i>
-            <button id="nav-pdv" class="flex flex-col items-center gap-1 text-white hover:text-green-200 transition"><i class="ph ph-shopping-cart text-2xl"></i><span class="text-xs">PDV</span></button>
-            <button id="nav-kds" class="flex flex-col items-center gap-1 text-yellow-400 hover:text-white transition"><i class="ph ph-cooking-pot text-2xl"></i><span class="text-xs">KDS</span></button>
-            <button id="nav-menu" class="flex flex-col items-center gap-1 text-green-300 hover:text-white transition"><i class="ph ph-list-magnifying-glass text-2xl"></i><span class="text-xs">Cardápio</span></button>
-            <button class="flex flex-col items-center gap-1 text-gray-400 mt-auto"><i class="ph ph-sign-out text-2xl"></i><span class="text-xs">Sair</span></button>
+            <button id="nav-pdv" class="flex flex-col items-center gap-1 text-white hover:opacity-75 transition"><i class="ph ph-shopping-cart text-2xl"></i><span class="text-xs">PDV</span></button>
+            <button id="nav-kds" class="flex flex-col items-center gap-1 text-white hover:opacity-75 transition"><i class="ph ph-cooking-pot text-2xl"></i><span class="text-xs">KDS</span></button>
+            
+            <button id="nav-menu" class="admin-only hidden flex-col items-center gap-1 text-white hover:opacity-75 transition"><i class="ph ph-list-magnifying-glass text-2xl"></i><span class="text-xs">Cardápio</span></button>
+            <button id="nav-settings" class="admin-only hidden flex-col items-center gap-1 text-white hover:opacity-75 transition"><i class="ph ph-gear text-2xl"></i><span class="text-xs">Ajustes</span></button>
+            
+            <button onclick="window.location.reload()" class="flex flex-col items-center gap-1 text-gray-300 mt-auto hover:text-white"><i class="ph ph-sign-out text-2xl"></i><span class="text-xs">Sair</span></button>
         </aside>
 
         <main id="tab-pdv" class="flex-1 flex flex-col h-full overflow-hidden">
             <header class="bg-white shadow-sm p-4 flex justify-between items-center z-10">
-                <h1 class="text-xl font-bold text-green-900">Frente de Caixa</h1>
+                <h1 class="text-xl font-bold theme-text">Frente de Caixa</h1>
+                <span id="user-badge" class="bg-gray-100 px-3 py-1 rounded-full text-xs font-bold text-gray-600">Caixa</span>
             </header>
             <div id="product-grid" class="flex-1 overflow-y-auto p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 hide-scrollbar"></div>
         </main>
@@ -44,7 +53,6 @@
         <main id="tab-kds" class="hidden flex-1 flex flex-col h-full bg-gray-100 p-6 overflow-y-auto z-20">
             <header class="mb-6 flex justify-between items-center">
                 <h2 class="text-3xl font-bold text-gray-800">Cozinha (KDS)</h2>
-                <span class="bg-green-900 text-white px-4 py-2 rounded-full font-bold text-sm shadow">Pedidos em Preparo</span>
             </header>
             <div id="kds-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
         </main>
@@ -56,15 +64,29 @@
                 <div class="flex gap-4">
                     <input type="text" id="new-name" placeholder="Nome (Ex: Bolo de Cenoura)" class="flex-1 p-3 rounded-xl border border-gray-300">
                     <input type="number" id="new-price" placeholder="Preço (Ex: 12.50)" class="w-32 p-3 rounded-xl border border-gray-300">
-                    <button id="btn-add-product" class="bg-green-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-800">Salvar Produto</button>
+                    <button id="btn-add-product" class="theme-bg text-white px-6 py-3 rounded-xl font-bold hover:opacity-90">Salvar</button>
                 </div>
             </div>
             <h3 class="font-bold text-lg mb-4">Produtos Cadastrados</h3>
             <div id="admin-product-list" class="flex flex-col gap-3"></div>
         </main>
 
+        <main id="tab-settings" class="hidden flex-1 flex flex-col h-full bg-white p-8 overflow-y-auto z-20">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Configurações do Sistema</h2>
+            
+            <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-8 max-w-lg">
+                <h3 class="font-bold text-lg mb-2 flex items-center gap-2"><i class="ph ph-palette text-xl"></i> Cor Principal da Interface</h3>
+                <p class="text-sm text-gray-500 mb-4">Mude a cor do menu lateral e dos botões.</p>
+                
+                <div class="flex items-center gap-4">
+                    <input type="color" id="theme-color-picker" value="#14532d" class="w-16 h-16 rounded cursor-pointer border-0 p-0">
+                    <button id="btn-save-theme" class="theme-bg text-white px-6 py-3 rounded-xl font-bold hover:opacity-90">Aplicar e Salvar Cor</button>
+                </div>
+            </div>
+        </main>
+
         <aside id="cart-panel" class="w-full md:w-96 bg-white shadow-2xl flex flex-col z-20">
-            <div class="p-4 bg-green-900 text-white flex justify-between items-center">
+            <div class="p-4 theme-bg text-white flex justify-between items-center">
                 <h2 class="text-lg font-bold flex items-center gap-2"><i class="ph ph-receipt"></i> Pedido Atual</h2>
             </div>
             <div id="cart-items" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 hide-scrollbar"></div>
@@ -74,7 +96,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <button id="btn-clear" class="py-3 px-4 bg-red-100 text-red-700 font-bold rounded-xl">Cancelar</button>
-                    <button id="btn-checkout" class="py-3 px-4 bg-green-900 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2">
+                    <button id="btn-checkout" class="py-3 px-4 theme-bg text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 hover:opacity-90">
                         <i class="ph ph-wallet"></i> Cobrar
                     </button>
                 </div>
@@ -82,7 +104,6 @@
         </aside>
 
     </div>
-    
     <div id="print-section"></div>
     <script type="module" src="app.js"></script>
 </body>
