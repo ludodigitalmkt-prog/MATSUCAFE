@@ -81,11 +81,11 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
 
     const logoUrlRaw = document.getElementById('logo-url-input').value;
     
-    // Pequena lógica para converter link do Google Drive em link direto de imagem
+    // Lógica corrigida para converter link do Google Drive em link direto de imagem
     let finalLogoUrl = logoUrlRaw;
     if (logoUrlRaw.includes('drive.google.com')) {
         const fileId = logoUrlRaw.split('/d/')[1]?.split('/')[0] || logoUrlRaw.split('id=')[1];
-        if (fileId) finalLogoUrl = `https://lh3.googleusercontent.com/u/0/d/$${fileId}`; // Corrigido a string de template
+        if (fileId) finalLogoUrl = `https://drive.google.com/uc?export=view&id=${fileId}`; 
     }
 
     const dados = {
@@ -381,8 +381,15 @@ document.getElementById('btn-checkout').addEventListener('click', async () => {
         if (valorCobrado > 0) reciboPagto += `<p style="font-size: 10px; font-weight:bold;">Valor Complementar: R$ ${valorCobrado.toFixed(2).replace('.',',')}</p>`;
     }
 
+    // Puxa a logo das configurações e aplica um filtro preto e branco para a Zebra
+    let logoHtml = '';
+    if (systemSettings.logoUrl) {
+        logoHtml = `<img src="${systemSettings.logoUrl}" style="width: 40mm; max-width: 100%; margin: 0 auto 10px auto; display: block; filter: grayscale(100%) contrast(150%);">`;
+    }
+
     const receipt = `
     <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px;">
+        ${logoHtml}
         <h2 style="margin: 0; font-size: 18px; text-transform: uppercase;">${systemSettings.nome}</h2>
         <p style="margin: 0; font-size: 10px;">CNPJ: ${systemSettings.cnpj}</p>
         <p style="margin: 0; font-size: 10px;">${systemSettings.endereco}</p>
