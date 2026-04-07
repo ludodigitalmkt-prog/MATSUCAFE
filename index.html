@@ -12,6 +12,20 @@
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans flex h-screen overflow-hidden select-none">
 
+    <div id="login-screen" class="absolute inset-0 bg-green-900 z-50 flex items-center justify-center flex-col">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-96 max-w-[90%] text-center">
+            <i class="ph-fill ph-coffee text-6xl text-green-900 mb-2"></i>
+            <h2 class="text-2xl font-bold text-gray-800 mb-1">Matsucafe</h2>
+            <p class="text-gray-500 mb-6 text-sm">Acesso Restrito</p>
+            
+            <input type="email" id="login-email" placeholder="Seu e-mail" class="w-full mb-3 p-3 border border-gray-300 rounded-xl focus:outline-none focus:border-green-700 bg-gray-50">
+            <input type="password" id="login-password" placeholder="Sua senha" class="w-full mb-6 p-3 border border-gray-300 rounded-xl focus:outline-none focus:border-green-700 bg-gray-50">
+            
+            <button onclick="fazerLogin()" class="w-full bg-green-900 text-white font-bold py-3 rounded-xl hover:bg-green-800 transition shadow-lg">Entrar</button>
+            <p id="login-error" class="text-red-500 text-sm mt-4 hidden">E-mail ou senha incorretos.</p>
+        </div>
+    </div>
+
     <div id="app-container" class="flex w-full h-full">
         
         <aside class="hidden md:flex flex-col w-24 bg-green-900 text-white items-center py-6 gap-8 shadow-xl">
@@ -75,7 +89,9 @@
             </button>
         </nav>
 
-    </div> <div id="print-section"></div>
+    </div>
+
+    <div id="print-section"></div>
 
     <script type="module" src="app.js"></script>
 </body>
