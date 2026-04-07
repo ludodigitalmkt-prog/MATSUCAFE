@@ -401,10 +401,15 @@ document.getElementById('btn-checkout').addEventListener('click', async () => {
     <p style="text-align: center; font-size: 10px; margin-top: 20px;">${systemSettings.rodape}</p>
     `;
     
-    document.getElementById('print-section').innerHTML = receipt; window.print();
-    cart = []; updateCartUI();
-    clientePdvSelecionado = null; 
-    document.getElementById('pdv-cliente').value = ""; // Volta pro avulso após venda
+    document.getElementById('print-section').innerHTML = receipt; 
+    
+    // Dá um pequeno atraso (100ms) para o navegador montar o recibo sem travar a tela
+    setTimeout(() => {
+        window.print();
+        cart = []; updateCartUI();
+        clientePdvSelecionado = null; 
+        document.getElementById('pdv-cliente').value = ""; // Volta pro avulso
+    }, 100);
 });
 
 // ==========================================
