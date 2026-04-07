@@ -11,3 +11,42 @@
 .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
 }
+/* ==========================================
+   CONFIGURAÇÕES DE IMPRESSÃO (RECIBO TÉRMICO)
+   ========================================== */
+
+/* 1. Esconde o texto do recibo na tela normal do computador */
+@media screen {
+    #print-section {
+        display: none !important;
+    }
+}
+
+/* 2. Regras ativadas apenas na hora que a janela de impressão abre */
+@media print {
+    /* Esconde todo o sistema (menus, botões, carrinho, cor de fundo) */
+    body {
+        background-color: white !important;
+    }
+    #app-container, #login-screen {
+        display: none !important;
+    }
+
+    /* Mostra APENAS o recibo e formata para a largura da maquininha */
+    #print-section {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80mm; /* Largura padrão de impressora térmica. Se a sua for menor, mude para 58mm */
+        padding: 5mm; /* Uma pequena margem para o texto não colar na borda do papel */
+        margin: 0;
+        color: black;
+        font-family: 'Courier New', Courier, monospace; /* Fonte clássica de recibo */
+    }
+
+    /* Remove cabeçalhos e rodapés automáticos do navegador (URL, data, página 1/1) */
+    @page {
+        margin: 0; 
+    }
+}
