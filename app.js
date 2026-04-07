@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, onSnapshot, serverTimestamp, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
 
 const firebaseConfig = {
@@ -17,9 +17,54 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// 🔴 ATENÇÃO: COLOQUE SEU E-MAIL AQUI PARA TER ACESSO TOTAL 🔴
-const ADMIN_EMAIL = "admin@matsucafe.com"; 
+// 🔴 COLOQUE SEU E-MAIL AQUI 🔴
+const ADMIN_EMAIL = "gestao@matsu.com"; 
 
+// ==========================================
+// 1. GLOBAL: LEITOR DE CÓDIGO DE BARRAS
+// ==========================================
+let barcodeBuffer = '';
+let barcodeTimeout;
+
+document.addEventListener('keydown', (e) => {
+    // Um leitor de código de barras imita um teclado digitando muito rápido e apertando "Enter" no final.
+    if (e.key === 'Enter') {
+        if (barcodeBuffer.length > 3) {
+            handleBarcodeScan(barcodeBuffer); // Processa o código
+        }
+        barcodeBuffer = '';
+    } else if (e.key !== 'Shift') {
+        barcodeBuffer += e.key;
+        clearTimeout(barcodeTimeout);
+        // Se demorar mais de 100ms entre as teclas, foi um humano digitando, então limpa.
+        barcodeTimeout = setTimeout(() => { barcodeBuffer = ''; }, 100);
+    }
+});
+
+function handleBarcodeScan(code) {
+    // Verifica se estamos na aba de cadastro de produto. Se sim, joga o código no input.
+    if (!document.getElementById('tab-menu').classList.contains('hidden')) {
+        document.getElementById('prod-barcode').value = code;
+        return;
+    }
+    
+    // Se estiver no PDV, procura o produto e joga no carrinho
+    const product = products.find(p => p.barcode === code);
+    if (product) {
+        addToCart(product);
+        // Feedback visual/sonoro pequeno
+        const bg = document.body.style.backgroundColor;
+        document.body.style.backgroundColor = '#dcfce3';
+        setTimeout(() => document.body.style.backgroundColor = bg, 150);
+    } else {
+        alert("Produto não encontrado no sistema: " + code);
+    }
+}
+
+
+// ==========================================
+// 2. CONFIGURAÇÕES E LOGIN
+// ==========================================
 async function loadSettings() {
     const configDoc = await getDoc(doc(db, "configuracoes", "loja"));
     if (configDoc.exists()) {
@@ -38,47 +83,22 @@ function changeThemeColor(hexColor) {
 }
 
 document.getElementById('btn-save-theme').addEventListener('click', async () => {
-    const selectedColor = document.getElementById('theme-color-picker').value;
-    changeThemeColor(selectedColor);
-    await setDoc(doc(db, "configuracoes", "loja"), { corPrincipal: selectedColor }, { merge: true });
-    alert("Cor atualizada!");
+    const color = document.getElementById('theme-color-picker').value;
+    changeThemeColor(color);
+    await setDoc(doc(db, "configuracoes", "loja"), { corPrincipal: color }, { merge: true });
 });
 
-document.getElementById('btn-upload-logo').addEventListener('click', async () => {
-    const file = document.getElementById('logo-file-input').files[0];
-    const statusText = document.getElementById('upload-status');
-    if (!file) return alert("Selecione uma imagem primeiro!");
-    try {
-        statusText.classList.remove('hidden'); statusText.innerText = "Enviando...";
-        const logoRef = ref(storage, 'configuracoes/logo_loja');
-        await uploadBytes(logoRef, file);
-        const downloadUrl = await getDownloadURL(logoRef);
-        await setDoc(doc(db, "configuracoes", "loja"), { logoUrl: downloadUrl }, { merge: true });
-        document.getElementById('app-logo-login').src = downloadUrl; document.getElementById('app-logo-sidebar').src = downloadUrl;
-        statusText.innerText = "Logo atualizada!";
-    } catch (error) { statusText.innerText = "Erro no upload."; }
-});
-
-// ==========================================
-// LOGIN E NÍVEIS DE ACESSO
-// ==========================================
 onAuthStateChanged(auth, (user) => {
     if (user) {
         document.getElementById('login-screen').style.display = 'none';
-        const badge = document.getElementById('user-badge');
         const adminButtons = document.querySelectorAll('.admin-only');
-        
         if (user.email === ADMIN_EMAIL) {
-            badge.innerText = "MODO: GERÊNCIA";
-            badge.className = "px-4 py-2 rounded-xl text-xs font-black shadow-sm bg-yellow-100 text-yellow-800 tracking-wide";
             adminButtons.forEach(btn => { btn.classList.remove('hidden'); btn.classList.add('flex'); });
             initDashboard(); 
         } else {
-            badge.innerText = "MODO: CAIXA";
-            badge.className = "px-4 py-2 rounded-xl text-xs font-black shadow-sm bg-gray-200 text-gray-700 tracking-wide";
             adminButtons.forEach(btn => { btn.classList.add('hidden'); btn.classList.remove('flex'); });
         }
-        loadSettings(); loadProducts(); initKDS(); loadStock();
+        loadSettings(); loadProducts(); loadCRM();
     } else {
         document.getElementById('login-screen').style.display = 'flex';
         loadSettings();
@@ -87,140 +107,131 @@ onAuthStateChanged(auth, (user) => {
 
 document.getElementById('login-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-password').value;
-    signInWithEmailAndPassword(auth, email, pass)
+    signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value)
         .then(() => { document.getElementById('login-error').classList.add('hidden'); e.target.reset(); })
         .catch(() => document.getElementById('login-error').classList.remove('hidden'));
 });
+document.getElementById('btn-logout').addEventListener('click', () => { signOut(auth).then(() => switchTab('tab-pdv')); });
 
-document.getElementById('btn-logout').addEventListener('click', () => {
-    signOut(auth).then(() => { switchTab('tab-pdv'); });
-});
-
-// ==========================================
-// NAVEGAÇÃO DE ABAS
-// ==========================================
+// NAVEGAÇÃO
 function switchTab(tabId) {
-    ['tab-pdv', 'tab-kds', 'tab-menu', 'tab-settings', 'tab-estoque', 'tab-financeiro'].forEach(id => {
-        document.getElementById(id).classList.add('hidden');
-    });
+    ['tab-pdv', 'tab-crm', 'tab-menu', 'tab-settings', 'tab-financeiro'].forEach(id => document.getElementById(id).classList.add('hidden'));
     document.getElementById(tabId).classList.remove('hidden');
 }
-
 document.getElementById('nav-pdv').addEventListener('click', () => switchTab('tab-pdv'));
-document.getElementById('nav-kds').addEventListener('click', () => switchTab('tab-kds'));
+document.getElementById('nav-crm').addEventListener('click', () => switchTab('tab-crm'));
 document.getElementById('nav-menu').addEventListener('click', () => switchTab('tab-menu'));
 document.getElementById('nav-settings').addEventListener('click', () => switchTab('tab-settings'));
-document.getElementById('nav-estoque').addEventListener('click', () => switchTab('tab-estoque'));
 document.getElementById('nav-financeiro').addEventListener('click', () => switchTab('tab-financeiro'));
 
 // ==========================================
-// DASHBOARD FINANCEIRO E ESTOQUE
+// 3. CRM (CLIENTES)
 // ==========================================
-function initDashboard() {
-    onSnapshot(collection(db, "pedidos"), (snapshot) => {
-        let totalRevenue = 0; let totalOrders = 0;
-        const historyList = document.getElementById('sales-history-list'); historyList.innerHTML = '';
-        snapshot.forEach((docSnap) => {
-            const pedido = docSnap.data();
-            totalRevenue += pedido.total; totalOrders++;
-            const div = document.createElement('div');
-            div.className = 'flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100 hover:shadow-sm transition';
-            let statusCor = pedido.status === 'pendente' ? 'text-yellow-600 bg-yellow-100' : 'text-green-600 bg-green-100';
-            div.innerHTML = `<div><p class="font-bold text-gray-800">Pedido #${docSnap.id.substring(0,4).toUpperCase()}</p><span class="text-[10px] px-2 py-1 rounded-md ${statusCor} uppercase font-bold mt-1 inline-block">${pedido.status}</span></div><div class="text-right"><p class="font-black text-lg text-gray-800">R$ ${pedido.total.toFixed(2).replace('.', ',')}</p></div>`;
-            historyList.appendChild(div);
-        });
-        document.getElementById('dash-revenue').innerText = `R$ ${totalRevenue.toFixed(2).replace('.', ',')}`;
-        document.getElementById('dash-orders').innerText = totalOrders;
-        document.getElementById('dash-ticket').innerText = `R$ ${totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(2).replace('.', ',') : '0,00'}`;
-    });
-}
+let clients = [];
+function loadCRM() {
+    onSnapshot(collection(db, "clientes"), (snapshot) => {
+        clients = [];
+        const list = document.getElementById('crm-list'); list.innerHTML = '';
+        const select = document.getElementById('pdv-cliente'); 
+        select.innerHTML = '<option value="">Cliente Padrão (Avulso)</option>'; // Reseta select do PDV
 
-function loadStock() {
-    onSnapshot(collection(db, "estoque"), (snapshot) => {
-        const list = document.getElementById('admin-stock-list'); list.innerHTML = '';
         snapshot.forEach((docSnap) => {
-            const item = docSnap.data();
+            const c = docSnap.data();
+            c.id = docSnap.id;
+            clients.push(c);
+
+            // Popula PDV
+            select.innerHTML += `<option value="${c.nome}">${c.nome} (${c.tipo})</option>`;
+
+            // Popula Tela de CRM
             const div = document.createElement('div');
             div.className = 'bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between';
-            const qtyColor = item.quantidade < 10 ? 'text-red-500' : 'theme-text';
-            div.innerHTML = `<div><p class="font-black text-xl text-gray-800">${item.nome}</p><p class="text-3xl ${qtyColor} font-black mt-2 mb-4">${item.quantidade} <span class="text-sm text-gray-400 font-medium">unid.</span></p></div><div class="flex gap-2 w-full"><button class="flex-1 bg-gray-100 py-3 rounded-xl text-gray-700 hover:bg-gray-200 font-black text-xl btn-minus">-</button><button class="flex-1 bg-gray-100 py-3 rounded-xl text-gray-700 hover:bg-gray-200 font-black text-xl btn-plus">+</button><button class="bg-red-50 text-red-500 px-4 py-3 rounded-xl hover:bg-red-100 btn-delete"><i class="ph ph-trash text-xl"></i></button></div>`;
-            div.querySelector('.btn-plus').addEventListener('click', async () => { await updateDoc(doc(db, "estoque", docSnap.id), { quantidade: item.quantidade + 1 }); });
-            div.querySelector('.btn-minus').addEventListener('click', async () => { await updateDoc(doc(db, "estoque", docSnap.id), { quantidade: item.quantidade - 1 }); });
-            div.querySelector('.btn-delete').addEventListener('click', async () => { if(confirm('Excluir?')) await deleteDoc(doc(db, "estoque", docSnap.id)); });
+            const tagColor = c.tipo === 'Colaborador' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
+            
+            div.innerHTML = `
+                <div>
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-black text-xl text-gray-800">${c.nome}</h3>
+                        <span class="text-xs font-bold px-2 py-1 rounded-md ${tagColor}">${c.tipo}</span>
+                    </div>
+                    <p class="text-sm text-gray-500"><i class="ph ph-phone"></i> ${c.telefone || 'Sem telefone'}</p>
+                    <p class="text-sm text-gray-500"><i class="ph ph-identification-card"></i> ${c.cpf || 'Sem CPF'}</p>
+                </div>
+                <button class="bg-red-50 text-red-500 px-4 py-3 rounded-xl hover:bg-red-100 font-bold mt-4 btn-delete">Excluir</button>
+            `;
+            div.querySelector('.btn-delete').addEventListener('click', async () => { if(confirm('Apagar?')) await deleteDoc(doc(db, "clientes", c.id)); });
             list.appendChild(div);
         });
     });
 }
-document.getElementById('btn-add-stock').addEventListener('click', async () => {
-    const nome = document.getElementById('new-stock-name').value;
-    const qtd = parseInt(document.getElementById('new-stock-qty').value);
-    if(!nome || isNaN(qtd)) return alert("Preencha corretamente!");
-    await addDoc(collection(db, "estoque"), { nome: nome, quantidade: qtd });
-    document.getElementById('new-stock-name').value = ''; document.getElementById('new-stock-qty').value = '';
+
+document.getElementById('btn-add-crm').addEventListener('click', async () => {
+    const nome = document.getElementById('crm-nome').value;
+    const tel = document.getElementById('crm-telefone').value;
+    const cpf = document.getElementById('crm-cpf').value;
+    const tipo = document.getElementById('crm-tipo').value;
+    if(!nome) return alert("Preencha o nome!");
+    await addDoc(collection(db, "clientes"), { nome, telefone: tel, cpf, tipo, dataCadastro: serverTimestamp() });
+    document.getElementById('crm-nome').value = ''; document.getElementById('crm-telefone').value = ''; document.getElementById('crm-cpf').value = '';
 });
 
 // ==========================================
-// GESTÃO DE CARDÁPIO COM IMAGENS
+// 4. PRODUTOS AVANÇADOS
 // ==========================================
 let products = [];
 async function loadProducts() {
-    const querySnapshot = await getDocs(collection(db, "produtos"));
-    products = [];
-    querySnapshot.forEach((doc) => products.push({ id: doc.id, ...doc.data() }));
-    renderProductsPDV(); renderProductsAdmin();
-}
+    onSnapshot(collection(db, "produtos"), (snapshot) => {
+        products = [];
+        const grid = document.getElementById('product-grid'); grid.innerHTML = '';
+        const list = document.getElementById('admin-product-list'); list.innerHTML = '';
+        
+        snapshot.forEach((docSnap) => {
+            const p = { id: docSnap.id, ...docSnap.data() };
+            products.push(p);
 
-function renderProductsPDV() {
-    const grid = document.getElementById('product-grid'); grid.innerHTML = '';
-    products.forEach(product => {
-        const imagemUrl = product.imagem || 'https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=300&q=80'; // Café genérico se não tiver foto
-        const div = document.createElement('div');
-        div.className = 'bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition transform duration-200 flex flex-col';
-        div.innerHTML = `
-            <img src="${imagemUrl}" alt="${product.nome}" class="w-full h-36 object-cover bg-gray-100">
-            <div class="p-5 flex-1 flex flex-col justify-between">
-                <h3 class="text-md font-bold text-gray-800 leading-tight mb-2">${product.nome}</h3>
-                <p class="theme-text font-black text-lg">R$ ${parseFloat(product.preco).toFixed(2).replace('.', ',')}</p>
-            </div>
-        `;
-        div.addEventListener('click', () => addToCart(product));
-        grid.appendChild(div);
-    });
-}
+            // Renderiza no Caixa (PDV)
+            const img = p.imagem || 'https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=300&q=80';
+            const div = document.createElement('div');
+            div.className = 'bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition transform duration-200 flex flex-col';
+            div.innerHTML = `<img src="${img}" class="w-full h-32 object-cover bg-gray-100"><div class="p-4 flex-1 flex flex-col justify-between"><h3 class="text-sm font-bold text-gray-800 leading-tight mb-2">${p.nome}</h3><div class="flex justify-between items-end"><p class="theme-text font-black text-lg">R$ ${p.preco.toFixed(2).replace('.', ',')}</p><span class="text-xs text-gray-400 bg-gray-100 px-2 rounded-md">Qtd: ${p.estoque}</span></div></div>`;
+            div.addEventListener('click', () => addToCart(p));
+            grid.appendChild(div);
 
-function renderProductsAdmin() {
-    const list = document.getElementById('admin-product-list'); list.innerHTML = '';
-    products.forEach(product => {
-        const div = document.createElement('div');
-        div.className = 'flex justify-between items-center bg-white p-5 rounded-2xl border border-gray-100 shadow-sm';
-        div.innerHTML = `<div><p class="font-black text-gray-800 text-lg">${product.nome}</p><p class="theme-text font-bold">R$ ${parseFloat(product.preco).toFixed(2).replace('.', ',')}</p></div><button class="bg-red-50 text-red-500 px-5 py-3 rounded-xl font-bold hover:bg-red-100 transition delete-btn">Excluir</button>`;
-        div.querySelector('.delete-btn').addEventListener('click', async () => { if(confirm('Apagar produto?')) { await deleteDoc(doc(db, "produtos", product.id)); loadProducts(); } });
-        list.appendChild(div);
+            // Renderiza na Administração
+            const divAdmin = document.createElement('div');
+            divAdmin.className = 'flex justify-between items-center bg-white p-5 rounded-2xl border border-gray-100 shadow-sm';
+            divAdmin.innerHTML = `<div><p class="font-black text-gray-800 text-lg">${p.nome} <span class="text-xs text-gray-400 font-normal">(${p.barcode || 'Sem Barcode'})</span></p><p class="text-gray-500 font-bold">Venda: R$ ${p.preco.toFixed(2)} | Custo: R$ ${p.custo.toFixed(2)} | Est: ${p.estoque}${p.unidade}</p></div><button class="bg-red-50 text-red-500 px-5 py-3 rounded-xl font-bold hover:bg-red-100 transition btn-delete">Excluir</button>`;
+            divAdmin.querySelector('.btn-delete').addEventListener('click', async () => { if(confirm('Apagar?')) await deleteDoc(doc(db, "produtos", p.id)); });
+            list.appendChild(divAdmin);
+        });
     });
 }
 
 document.getElementById('btn-add-product').addEventListener('click', async () => {
-    const nome = document.getElementById('new-name').value;
-    const preco = document.getElementById('new-price').value;
-    const imagem = document.getElementById('new-image').value;
-    if(!nome || !preco) return alert("Preencha nome e preço!");
+    const nome = document.getElementById('prod-nome').value;
+    const preco = parseFloat(document.getElementById('prod-venda').value);
+    const custo = parseFloat(document.getElementById('prod-custo').value) || 0;
+    const estoque = parseInt(document.getElementById('prod-estoque').value) || 0;
+    
+    if(!nome || isNaN(preco)) return alert("Nome e Preço de venda são obrigatórios!");
     
     await addDoc(collection(db, "produtos"), { 
+        barcode: document.getElementById('prod-barcode').value,
         nome: nome, 
-        preco: parseFloat(preco),
-        imagem: imagem // Agora salva a foto!
+        unidade: document.getElementById('prod-unidade').value,
+        estoque: estoque,
+        custo: custo,
+        preco: preco,
+        validade: document.getElementById('prod-validade').value,
+        imagem: document.getElementById('prod-imagem').value 
     });
     
-    document.getElementById('new-name').value = ''; 
-    document.getElementById('new-price').value = '';
-    document.getElementById('new-image').value = '';
-    loadProducts(); alert("Produto Cadastrado!");
+    ['prod-barcode','prod-nome','prod-unidade','prod-estoque','prod-custo','prod-venda','prod-validade','prod-imagem'].forEach(id => document.getElementById(id).value = '');
+    alert("Produto/Lote Salvo!");
 });
 
 // ==========================================
-// CARRINHO E CHECKOUT
+// 5. CAIXA, VENDA E RECIBO
 // ==========================================
 let cart = []; let cartTotal = 0;
 function addToCart(product) {
@@ -233,7 +244,7 @@ function updateCartUI() {
     cartItemsDiv.innerHTML = ''; cartTotal = 0;
     
     if (cart.length === 0) {
-        cartItemsDiv.innerHTML = '<p class="text-center text-gray-400 mt-10 font-medium">O carrinho está vazio.</p>';
+        cartItemsDiv.innerHTML = '<p class="text-center text-gray-400 mt-10 font-medium">Carrinho Vazio.</p>';
     } else {
         cart.forEach((item) => {
             cartTotal += item.preco * item.qty;
@@ -249,33 +260,79 @@ document.getElementById('btn-clear').addEventListener('click', () => { cart = []
 
 document.getElementById('btn-checkout').addEventListener('click', async () => {
     if(cart.length === 0) return alert("Carrinho vazio!");
-    try {
-        await addDoc(collection(db, "pedidos"), { itens: cart, total: cartTotal, status: "pendente", data: serverTimestamp() });
-    } catch(e) { return alert("Erro no banco."); }
     
+    const cliente = document.getElementById('pdv-cliente').value || 'Avulso';
+    const pagamento = document.getElementById('pdv-pagamento').value;
+    const nroPedido = Math.floor(100000 + Math.random() * 900000); // Nro Único 6 digitos
+    
+    try {
+        await addDoc(collection(db, "vendas"), { 
+            nroPedido, itens: cart, total: cartTotal, 
+            cliente: cliente, pagamento: pagamento, data: serverTimestamp() 
+        });
+    } catch(e) { return alert("Erro no banco de dados ao salvar a venda."); }
+    
+    // Imprimir Recibo
     let itemsHtml = '';
     cart.forEach(item => { itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>${item.qty}x ${item.nome}</span><span>R$ ${(item.preco * item.qty).toFixed(2).replace('.', ',')}</span></div>`; });
-    const receipt = `<div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px;"><h2 style="margin: 0; font-size: 18px;">MATSUCAFE</h2><p style="margin: 0; font-size: 10px;">*** RECIBO DE VENDA ***</p></div><div style="padding: 10px 0; border-bottom: 1px dashed #000; margin-bottom: 10px; font-family: monospace;">${itemsHtml}</div><div style="display:flex; justify-content:space-between; font-weight:bold; font-size: 16px;"><span>TOTAL:</span><span>R$ ${cartTotal.toFixed(2).replace('.', ',')}</span></div>`;
+    
+    const dataHora = new Date().toLocaleString('pt-BR');
+    
+    const receipt = `
+    <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px;">
+        <h2 style="margin: 0; font-size: 18px;">MATSUCAFE</h2>
+        <p style="margin: 0; font-size: 10px;">CNPJ: 00.000.000/0001-00</p>
+        <p style="margin: 0; font-size: 10px;">*** RECIBO DE VENDA ***</p>
+    </div>
+    <p style="font-size: 10px;"><b>Pedido:</b> #${nroPedido}</p>
+    <p style="font-size: 10px;"><b>Data:</b> ${dataHora}</p>
+    <p style="font-size: 10px;"><b>Cliente:</b> ${cliente}</p>
+    <p style="font-size: 10px;"><b>Pagamento:</b> ${pagamento}</p>
+    
+    <div style="padding: 10px 0; border-top: 1px dashed #000; border-bottom: 1px dashed #000; margin: 10px 0; font-family: monospace;">${itemsHtml}</div>
+    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size: 16px;"><span>TOTAL:</span><span>R$ ${cartTotal.toFixed(2).replace('.', ',')}</span></div>
+    <p style="text-align: center; font-size: 10px; margin-top: 15px;">Obrigado pela preferência!</p>
+    `;
+    
     document.getElementById('print-section').innerHTML = receipt; window.print();
     cart = []; updateCartUI();
 });
 
 // ==========================================
-// KDS (COZINHA)
+// 6. DASHBOARD FINANCEIRO E VOUCHERS
 // ==========================================
-function initKDS() {
-    onSnapshot(collection(db, "pedidos"), (snapshot) => {
-        const kdsGrid = document.getElementById('kds-grid'); kdsGrid.innerHTML = '';
+function initDashboard() {
+    // Escuta a coleção "vendas" agora
+    onSnapshot(collection(db, "vendas"), (snapshot) => {
+        let totalRevenue = 0; let totalVouchers = 0; let totalOrders = 0;
+        const historyList = document.getElementById('sales-history-list'); historyList.innerHTML = '';
+        
         snapshot.forEach((docSnap) => {
-            const pedido = docSnap.data();
-            if(pedido.status !== "pendente") return; 
+            const venda = docSnap.data();
+            totalOrders++;
+            if (venda.pagamento === 'Voucher') {
+                totalVouchers += venda.total; // Soma nos "A receber"
+            } else {
+                totalRevenue += venda.total; // Soma no faturamento real
+            }
+
             const div = document.createElement('div');
-            div.className = 'bg-white p-6 rounded-[2rem] shadow-sm border-t-8 border-yellow-400 flex flex-col justify-between';
-            let itensHtml = '';
-            pedido.itens.forEach(item => { itensHtml += `<p class="font-black text-lg border-b border-gray-100 py-3 text-gray-700">${item.qty}x ${item.nome}</p>`; });
-            div.innerHTML = `<div class="flex justify-between items-center mb-6"><span class="text-gray-400 font-bold uppercase text-sm">Pedido #${docSnap.id.substring(0,4)}</span><span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-lg text-xs font-black animate-pulse">AGUARDANDO</span></div><div class="flex-1 mb-8">${itensHtml}</div><button class="bg-gray-900 text-white font-bold py-4 rounded-2xl hover:bg-green-600 transition w-full btn-pronto shadow-md"><i class="ph ph-check-circle mr-2"></i> Pronto</button>`;
-            div.querySelector('.btn-pronto').addEventListener('click', async () => { await updateDoc(doc(db, "pedidos", docSnap.id), { status: "pronto" }); });
-            kdsGrid.appendChild(div);
+            div.className = 'flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100 hover:shadow-sm transition';
+            const corPgto = venda.pagamento === 'Voucher' ? 'text-purple-600 bg-purple-100' : 'text-blue-600 bg-blue-100';
+            
+            div.innerHTML = `
+                <div>
+                    <p class="font-bold text-gray-800">Venda #${venda.nroPedido}</p>
+                    <p class="text-xs text-gray-500 font-medium">Cliente: ${venda.cliente}</p>
+                    <span class="text-[10px] px-2 py-1 rounded-md ${corPgto} uppercase font-bold mt-1 inline-block">${venda.pagamento}</span>
+                </div>
+                <div class="text-right"><p class="font-black text-lg text-gray-800">R$ ${venda.total.toFixed(2).replace('.', ',')}</p></div>
+            `;
+            historyList.appendChild(div);
         });
+        
+        document.getElementById('dash-revenue').innerText = `R$ ${totalRevenue.toFixed(2).replace('.', ',')}`;
+        document.getElementById('dash-vouchers').innerText = `R$ ${totalVouchers.toFixed(2).replace('.', ',')}`;
+        document.getElementById('dash-orders').innerText = totalOrders;
     });
 }
