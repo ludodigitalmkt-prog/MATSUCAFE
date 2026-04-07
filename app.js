@@ -18,7 +18,7 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 // 🔴 ATENÇÃO: COLOQUE SEU E-MAIL AQUI PARA TER ACESSO TOTAL 🔴
-const ADMIN_EMAIL = "gestao@matsu.com"; 
+const ADMIN_EMAIL = "admin@matsucafe.com"; 
 
 async function loadSettings() {
     const configDoc = await getDoc(doc(db, "configuracoes", "loja"));
