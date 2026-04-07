@@ -113,58 +113,58 @@
             </div>
         </main>
 
-        <main id="tab-settings" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
-            <h2 class="text-3xl font-black text-gray-800 mb-8">Configurações Gerais</h2>
-            
-            <div class="flex flex-col gap-6 max-w-5xl">
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                    <h3 class="font-black text-xl mb-6 text-gray-800 flex items-center gap-2"><i class="ph ph-buildings theme-text"></i> Dados da Empresa</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label class="text-xs font-bold text-gray-500 uppercase">Nome da Empresa</label><input type="text" id="cfg-empresa-nome" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1"></div>
-                        <div><label class="text-xs font-bold text-gray-500 uppercase">CNPJ</label><input type="text" id="cfg-empresa-cnpj" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1"></div>
-                        <div class="md:col-span-2"><label class="text-xs font-bold text-gray-500 uppercase">Endereço Completo</label><input type="text" id="cfg-empresa-endereco" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1"></div>
-                        <div><label class="text-xs font-bold text-gray-500 uppercase">Telefone</label><input type="text" id="cfg-empresa-telefone" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1"></div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                        <h3 class="font-black text-xl mb-4 text-gray-800 flex items-center gap-2"><i class="ph ph-palette theme-text"></i> Visual</h3>
-                        <label class="text-xs font-bold text-gray-500 uppercase">Cor do Sistema</label>
-                        <div class="flex items-center gap-4 mt-1 mb-4">
-                            <input type="color" id="theme-color-picker" value="#14532d" class="w-16 h-12 rounded-xl cursor-pointer border-0 p-0 shadow-sm">
-                        </div>
-                        <label class="text-xs font-bold text-gray-500 uppercase">Logo da Empresa</label>
-                        <input type="file" id="logo-file-input" accept="image/*" class="w-full text-sm mt-1 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-gray-100">
-                    </div>
-
-                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                        <h3 class="font-black text-xl mb-4 text-gray-800 flex items-center gap-2"><i class="ph ph-receipt theme-text"></i> Textos do Recibo</h3>
-                        <label class="text-xs font-bold text-gray-500 uppercase">Mensagem de Rodapé</label>
-                        <textarea id="cfg-recibo-rodape" rows="2" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1 resize-none"></textarea>
-                    </div>
-                </div>
-
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                    <h3 class="font-black text-xl mb-6 text-gray-800 flex items-center gap-2"><i class="ph ph-sliders theme-text"></i> Exibição no Recibo</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" id="cfg-show-cpf" class="w-5 h-5 accent-green-700"> <span class="font-bold text-gray-700">Mostrar CPF do Cliente</span>
-                        </label>
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" id="cfg-show-tel" class="w-5 h-5 accent-green-700"> <span class="font-bold text-gray-700">Mostrar Tel do Cliente</span>
-                        </label>
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" id="cfg-show-hora" class="w-5 h-5 accent-green-700"> <span class="font-bold text-gray-700">Mostrar Horário Exato</span>
-                        </label>
-                    </div>
-                </div>
-
-                <button id="btn-save-settings" class="theme-bg text-white px-8 py-5 rounded-2xl font-black text-lg shadow-xl hover:opacity-90 transition mt-4 w-full md:w-auto self-end">
-                    <i class="ph ph-floppy-disk mr-2"></i> Salvar Todas as Configurações
-                </button>
+<main id="tab-settings" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
+    <h2 class="text-3xl font-black text-gray-800 mb-8">Configurações Gerais</h2>
+    
+    <div class="flex flex-col gap-6 max-w-5xl">
+        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+            <h3 class="font-black text-xl mb-6 text-gray-800 flex items-center gap-2"><i class="ph ph-buildings theme-text"></i> Dados da Empresa</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label class="text-xs font-bold text-gray-500 uppercase">Nome da Empresa</label><input type="text" id="cfg-empresa-nome" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1"></div>
+                <div><label class="text-xs font-bold text-gray-500 uppercase">CNPJ</label><input type="text" id="cfg-empresa-cnpj" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1"></div>
+                <div class="md:col-span-2"><label class="text-xs font-bold text-gray-500 uppercase">Endereço Completo</label><input type="text" id="cfg-empresa-endereco" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1"></div>
+                <div><label class="text-xs font-bold text-gray-500 uppercase">Telefone</label><input type="text" id="cfg-empresa-telefone" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1"></div>
             </div>
-        </main>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                <h3 class="font-black text-xl mb-4 text-gray-800 flex items-center gap-2"><i class="ph ph-palette theme-text"></i> Visual</h3>
+                <label class="text-xs font-bold text-gray-500 uppercase">Cor do Sistema</label>
+                <div class="flex items-center gap-4 mt-1 mb-4">
+                    <input type="color" id="theme-color-picker" value="#14532d" class="w-16 h-12 rounded-xl cursor-pointer border-0 p-0 shadow-sm">
+                </div>
+                <label class="text-xs font-bold text-gray-500 uppercase">URL da Logo (Google Drive/Web)</label>
+                <input type="text" id="logo-url-input" placeholder="Cole o link da imagem aqui" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1">
+            </div>
+
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                <h3 class="font-black text-xl mb-4 text-gray-800 flex items-center gap-2"><i class="ph ph-receipt theme-text"></i> Textos do Recibo</h3>
+                <label class="text-xs font-bold text-gray-500 uppercase">Mensagem de Rodapé</label>
+                <textarea id="cfg-recibo-rodape" rows="2" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1 resize-none"></textarea>
+            </div>
+        </div>
+
+        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+            <h3 class="font-black text-xl mb-6 text-gray-800 flex items-center gap-2"><i class="ph ph-sliders theme-text"></i> Exibição no Recibo</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="cfg-show-cpf" class="w-5 h-5 accent-green-700"> <span class="font-bold text-gray-700">Mostrar CPF</span>
+                </label>
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="cfg-show-tel" class="w-5 h-5 accent-green-700"> <span class="font-bold text-gray-700">Mostrar Telefone</span>
+                </label>
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="cfg-show-hora" class="w-5 h-5 accent-green-700"> <span class="font-bold text-gray-700">Mostrar Horário</span>
+                </label>
+            </div>
+        </div>
+
+        <button id="btn-save-settings" class="theme-bg text-white px-8 py-5 rounded-2xl font-black text-lg shadow-xl hover:opacity-90 transition mt-4 w-full md:w-auto self-end">
+            <i class="ph ph-floppy-disk mr-2"></i> Salvar Todas as Configurações
+        </button>
+    </div>
+</main>
 
         <aside id="cart-panel" class="w-full md:w-[400px] bg-white shadow-[-10px_0_30px_rgba(0,0,0,0.05)] flex flex-col z-20 border-l border-gray-100">
             <div class="p-6 theme-bg text-white">
