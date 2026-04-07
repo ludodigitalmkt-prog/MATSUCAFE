@@ -78,7 +78,18 @@ async function loadSettings() {
 }
 
 document.getElementById('btn-save-settings').addEventListener('click', async () => {
-    const btn = document.getElementById('btn-save-settings'); btn.innerText = "Salvando...";
+    const btn = document.getElementById('btn-save-settings'); 
+    btn.innerText = "Salvando...";
+
+    const logoUrlRaw = document.getElementById('logo-url-input').value;
+    
+    // Pequena lógica para converter link do Google Drive em link direto de imagem
+    let finalLogoUrl = logoUrlRaw;
+    if (logoUrlRaw.includes('drive.google.com')) {
+        const fileId = logoUrlRaw.split('/d/')[1]?.split('/')[0] || logoUrlRaw.split('id=')[1];
+        if (fileId) finalLogoUrl = `https://lh3.googleusercontent.com/u/0/d/${fileId}`;
+    }
+
     const dados = {
         corPrincipal: document.getElementById('theme-color-picker').value,
         nome: document.getElementById('cfg-empresa-nome').value,
@@ -88,22 +99,15 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
         rodape: document.getElementById('cfg-recibo-rodape').value,
         showCpf: document.getElementById('cfg-show-cpf').checked,
         showTel: document.getElementById('cfg-show-tel').checked,
-        showHora: document.getElementById('cfg-show-hora').checked
+        showHora: document.getElementById('cfg-show-hora').checked,
+        logoUrl: finalLogoUrl // Salva o link direto
     };
-    const file = document.getElementById('logo-file-input').files[0];
-    if (file) {
-        try {
-            const logoRef = ref(storage, 'configuracoes/logo_loja');
-            await uploadBytes(logoRef, file);
-            dados.logoUrl = await getDownloadURL(logoRef);
-        } catch (e) { alert("Configure o CORS no Firebase Storage via Google Cloud Shell para enviar imagens."); }
-    }
+
     await setDoc(doc(db, "configuracoes", "loja"), dados, { merge: true });
     await loadSettings(); 
     btn.innerHTML = `<i class="ph ph-check mr-2"></i> Salvo com Sucesso!`;
     setTimeout(() => { btn.innerHTML = `<i class="ph ph-floppy-disk mr-2"></i> Salvar Todas as Configurações`; }, 3000);
 });
-
 onAuthStateChanged(auth, (user) => {
     if (user) {
         document.getElementById('login-screen').style.display = 'none';
