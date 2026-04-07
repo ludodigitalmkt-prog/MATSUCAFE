@@ -19,6 +19,22 @@
 /* 1. Esconde o texto do recibo na tela normal do computador */
 @media screen {
     #print-section {
+        /* 3. Libera o recibo para crescer o quanto precisar */
+    #print-section {
+        display: block !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 80mm !important; 
+        height: auto !important; 
+        overflow: visible !important;
+        margin: 0;
+        padding: 2mm;
+        padding-bottom: 20mm !important; /* 🔥 ESSA É A MÁGICA: Empurra o papel 2cm para fora */
+        color: #000 !important;
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: bold;
+    }
         display: none !important;
     }
 }
@@ -43,7 +59,7 @@
     }
 
     /* 3. Libera o recibo para crescer o quanto precisar */
-    #print-section {
+     {
         display: block !important;
         position: absolute !important;
         top: 0 !important;
