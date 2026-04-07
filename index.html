@@ -22,8 +22,8 @@
             <img id="app-logo-login" src="https://images.unsplash.com/photo-1559925313-b3a015bdca3b?auto=format&fit=crop&w=200&q=80" alt="Logo" class="w-28 h-28 rounded-full object-cover mx-auto mb-6 border-4 theme-border shadow-md">
             <h2 class="text-3xl font-black text-gray-800 mb-1 tracking-tight">Matsucafe</h2>
             <p class="text-gray-400 mb-8 font-medium">ERP & PDV Integrado</p>
-            <input type="email" id="login-email" placeholder="E-mail de acesso" required class="w-full p-4 mb-4 bg-gray-50 border border-gray-200 rounded-2xl">
-            <input type="password" id="login-password" placeholder="Senha" required class="w-full p-4 mb-6 bg-gray-50 border border-gray-200 rounded-2xl">
+            <input type="email" id="login-email" placeholder="E-mail de acesso" required class="w-full p-4 mb-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none">
+            <input type="password" id="login-password" placeholder="Senha" required class="w-full p-4 mb-6 bg-gray-50 border border-gray-200 rounded-2xl outline-none">
             <button type="submit" class="w-full theme-bg text-white font-bold text-lg py-4 rounded-2xl shadow-xl hover:opacity-90 transition">Entrar no Sistema</button>
             <p id="login-error" class="text-red-500 font-bold text-sm mt-4 hidden">E-mail ou senha incorretos.</p>
         </form>
@@ -50,36 +50,24 @@
                     <h1 class="text-2xl font-black text-gray-800">Frente de Caixa</h1>
                     <p class="text-sm text-green-600 font-bold animate-pulse flex items-center gap-1"><i class="ph ph-barcode"></i> Leitor Ativo: Pode bipar o código!</p>
                 </div>
-                
                 <div class="flex gap-4">
-                    <select id="pdv-cliente" class="p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-700 outline-none">
-                        <option value="">Cliente Padrão (Sem Cadastro)</option>
-                        </select>
+                    <select id="pdv-cliente" class="p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-700 outline-none"><option value="">Cliente Padrão (Sem Cadastro)</option></select>
                     <select id="pdv-pagamento" class="p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-700 outline-none">
-                        <option value="Dinheiro">Dinheiro</option>
-                        <option value="PIX">PIX</option>
-                        <option value="Cartão de Crédito">Cartão Crédito</option>
-                        <option value="Cartão de Débito">Cartão Débito</option>
-                        <option value="Voucher">Voucher (Colaborador)</option>
+                        <option value="Dinheiro">Dinheiro</option><option value="PIX">PIX</option><option value="Cartão de Crédito">Cartão Crédito</option><option value="Cartão de Débito">Cartão Débito</option><option value="Voucher">Voucher</option>
                     </select>
                 </div>
             </header>
-            
             <div id="product-grid" class="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 hide-scrollbar content-start"></div>
         </main>
 
         <main id="tab-crm" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
             <h2 class="text-3xl font-black text-gray-800 mb-8">Gestão de Clientes e Equipe</h2>
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 mb-8">
-                <h3 class="font-bold text-lg mb-4 text-gray-700">Novo Cadastro</h3>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     <input type="text" id="crm-nome" placeholder="Nome Completo" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
                     <input type="text" id="crm-telefone" placeholder="Telefone" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
                     <input type="text" id="crm-cpf" placeholder="CPF" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
-                    <select id="crm-tipo" class="p-4 bg-gray-50 rounded-2xl border border-gray-200 font-bold text-gray-700">
-                        <option value="Cliente">Cliente</option>
-                        <option value="Colaborador">Colaborador</option>
-                    </select>
+                    <select id="crm-tipo" class="p-4 bg-gray-50 rounded-2xl border border-gray-200 font-bold text-gray-700"><option value="Cliente">Cliente</option><option value="Colaborador">Colaborador</option></select>
                 </div>
                 <button id="btn-add-crm" class="theme-bg text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:opacity-90">Salvar Cadastro</button>
             </div>
@@ -89,11 +77,10 @@
         <main id="tab-menu" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
             <h2 class="text-3xl font-black text-gray-800 mb-8">Produtos e Estoque</h2>
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 mb-8">
-                <h3 class="font-bold text-lg mb-4 text-gray-700">Cadastrar Produto / Lote</h3>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     <input type="text" id="prod-barcode" placeholder="Código de Barras (Bipe aqui)" class="p-4 bg-yellow-50 rounded-2xl border border-yellow-200 font-bold">
                     <input type="text" id="prod-nome" placeholder="Nome do Produto" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
-                    <input type="text" id="prod-unidade" placeholder="Und (Ex: Kg, Un, Litro)" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                    <input type="text" id="prod-unidade" placeholder="Und (Ex: Kg, Un)" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
                     <input type="number" id="prod-estoque" placeholder="Qtd Estoque" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
                     <input type="number" id="prod-custo" placeholder="Custo Real (R$)" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
                     <input type="number" id="prod-venda" placeholder="Valor Venda (R$)" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
@@ -109,7 +96,7 @@
             <h2 class="text-3xl font-black text-gray-800 mb-8">Dashboard Financeiro</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-white p-8 rounded-[2rem] shadow-sm border-b-4 border-green-500">
-                    <p class="text-gray-400 text-sm font-bold mb-2 uppercase tracking-wide">Faturamento</p>
+                    <p class="text-gray-400 text-sm font-bold mb-2 uppercase tracking-wide">Faturamento Real</p>
                     <h3 id="dash-revenue" class="text-4xl font-black text-gray-800">R$ 0,00</h3>
                 </div>
                 <div class="bg-white p-8 rounded-[2rem] shadow-sm border-b-4 border-blue-500">
@@ -117,33 +104,54 @@
                     <h3 id="dash-vouchers" class="text-4xl font-black text-gray-800">R$ 0,00</h3>
                 </div>
                 <div class="bg-white p-8 rounded-[2rem] shadow-sm border-b-4 border-purple-500">
-                    <p class="text-gray-400 text-sm font-bold mb-2 uppercase tracking-wide">Pedidos</p>
+                    <p class="text-gray-400 text-sm font-bold mb-2 uppercase tracking-wide">Qtd Vendas</p>
                     <h3 id="dash-orders" class="text-4xl font-black text-gray-800">0</h3>
                 </div>
             </div>
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex-1 overflow-y-auto">
-                <h3 class="font-bold text-lg mb-6 text-gray-700">Histórico de Vendas</h3>
+                <h3 class="font-bold text-lg mb-6 text-gray-700">Histórico de Vendas (Permite Exclusão)</h3>
                 <div id="sales-history-list" class="flex flex-col gap-3"></div>
             </div>
         </main>
 
         <main id="tab-settings" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
-            <h2 class="text-3xl font-black text-gray-800 mb-8">Configurações</h2>
-            <div class="grid md:grid-cols-2 gap-8 max-w-4xl">
+            <h2 class="text-3xl font-black text-gray-800 mb-8">Configurações Gerais do Sistema</h2>
+            
+            <div class="flex flex-col gap-6 max-w-5xl">
+                
                 <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                    <h3 class="font-black text-xl mb-2 text-gray-800 flex items-center gap-2"><i class="ph ph-palette theme-text"></i> Identidade Visual</h3>
-                    <div class="flex items-center gap-4 mt-4">
-                        <input type="color" id="theme-color-picker" value="#14532d" class="w-16 h-16 rounded-2xl cursor-pointer border-0 p-0">
-                        <button id="btn-save-theme" class="theme-bg text-white px-6 py-4 rounded-2xl font-bold shadow-md">Aplicar Cor</button>
+                    <h3 class="font-black text-xl mb-6 text-gray-800 flex items-center gap-2"><i class="ph ph-buildings theme-text"></i> Dados da Empresa</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">Nome da Empresa</label><input type="text" id="cfg-empresa-nome" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1"></div>
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">CNPJ</label><input type="text" id="cfg-empresa-cnpj" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1"></div>
+                        <div class="md:col-span-2"><label class="text-xs font-bold text-gray-500 uppercase">Endereço Completo</label><input type="text" id="cfg-empresa-endereco" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1"></div>
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">Telefone</label><input type="text" id="cfg-empresa-telefone" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1"></div>
                     </div>
                 </div>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                    <h3 class="font-black text-xl mb-2 text-gray-800 flex items-center gap-2"><i class="ph ph-image theme-text"></i> Logo</h3>
-                    <div class="flex flex-col gap-4 mt-4">
-                        <input type="file" id="logo-file-input" accept="image/*" class="text-sm">
-                        <button id="btn-upload-logo" class="bg-gray-800 text-white px-6 py-4 rounded-2xl font-bold shadow-md">Fazer Upload</button>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                        <h3 class="font-black text-xl mb-4 text-gray-800 flex items-center gap-2"><i class="ph ph-palette theme-text"></i> Visual</h3>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Cor do Sistema</label>
+                        <div class="flex items-center gap-4 mt-1 mb-4">
+                            <input type="color" id="theme-color-picker" value="#14532d" class="w-16 h-12 rounded-xl cursor-pointer border-0 p-0 shadow-sm">
+                        </div>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Logo da Empresa</label>
+                        <input type="file" id="logo-file-input" accept="image/*" class="w-full text-sm mt-1 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-gray-100">
+                        <p id="upload-status" class="text-xs text-green-600 font-bold hidden mt-2">Logo atualizada!</p>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                        <h3 class="font-black text-xl mb-4 text-gray-800 flex items-center gap-2"><i class="ph ph-receipt theme-text"></i> Textos do Recibo</h3>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Mensagem de Rodapé</label>
+                        <textarea id="cfg-recibo-rodape" rows="3" placeholder="Ex: Volte sempre! Não é documento fiscal." class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 mt-1 resize-none"></textarea>
                     </div>
                 </div>
+
+                <button id="btn-save-settings" class="theme-bg text-white px-8 py-5 rounded-2xl font-black text-lg shadow-xl hover:opacity-90 transition mt-4 w-full md:w-auto self-end">
+                    <i class="ph ph-floppy-disk mr-2"></i> Salvar Todas as Configurações
+                </button>
+
             </div>
         </main>
 
@@ -160,8 +168,8 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <button id="btn-clear" class="py-4 px-4 bg-white border-2 border-gray-200 text-gray-600 font-bold rounded-2xl hover:bg-red-50 hover:text-red-600 transition">Cancelar</button>
-                    <button id="btn-checkout" class="py-4 px-4 theme-bg text-white font-bold rounded-2xl shadow-xl flex items-center justify-center gap-2 hover:opacity-90 transition">
-                        <i class="ph ph-wallet text-xl"></i> Finalizar Venda
+                    <button id="btn-checkout" class="py-4 px-4 theme-bg text-white font-bold rounded-2xl shadow-xl flex items-center justify-center gap-2 hover:opacity-90 transition transform hover:-translate-y-1">
+                        <i class="ph ph-wallet text-xl"></i> Cobrar
                     </button>
                 </div>
             </div>
