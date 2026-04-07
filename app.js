@@ -1,6 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, onSnapshot, serverTimestamp, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+// NOVA IMPORTAÇÃO: STORAGE (Para imagens)
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCE_lxmrON0o2mHsj8olNaRIFKcgz6oQc8",
@@ -14,19 +16,26 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app); // INICIA O STORAGE DA LOGO
 
 // ==========================================
-// 1. CONFIGURAÇÕES, CORES E SEGURANÇA
+// 1. CONFIGURAÇÕES, CORES E LOGO
 // ==========================================
 
-// COLOQUE SEU E-MAIL DE DONO AQUI PARA LIBERAR TUDO:
+// COLOQUE SEU E-MAIL DE DONO AQUI:
 const ADMIN_EMAIL = "admin@matsucafe.com"; 
 
 async function loadSettings() {
     const configDoc = await getDoc(doc(db, "configuracoes", "loja"));
     if (configDoc.exists()) {
-        const cor = configDoc.data().corPrincipal;
-        if (cor) changeThemeColor(cor);
+        const dados = configDoc.data();
+        // Carrega a Cor
+        if (dados.corPrincipal) changeThemeColor(dados.corPrincipal);
+        // Carrega a Logo
+        if (dados.logoUrl) {
+            document.getElementById('app-logo-login').src = dados.logoUrl;
+            document.getElementById('app-logo-sidebar').src = dados.logoUrl;
+        }
     }
 }
 
@@ -39,13 +48,51 @@ function changeThemeColor(hexColor) {
     document.getElementById('theme-color-picker').value = hexColor;
 }
 
-// Salva a nova cor no banco de dados para todos os usuários
 document.getElementById('btn-save-theme').addEventListener('click', async () => {
     const selectedColor = document.getElementById('theme-color-picker').value;
     changeThemeColor(selectedColor);
     await setDoc(doc(db, "configuracoes", "loja"), { corPrincipal: selectedColor }, { merge: true });
-    alert("Cor do sistema atualizada com sucesso!");
+    alert("Cor atualizada!");
 });
+
+// Lógica de Upload da Logo
+document.getElementById('btn-upload-logo').addEventListener('click', async () => {
+    const fileInput = document.getElementById('logo-file-input');
+    const file = fileInput.files[0];
+    const statusText = document.getElementById('upload-status');
+    
+    if (!file) return alert("Selecione uma imagem primeiro!");
+
+    try {
+        statusText.classList.remove('hidden');
+        statusText.innerText = "Fazendo upload... Aguarde.";
+        statusText.classList.replace('text-green-700', 'text-yellow-600');
+
+        // Cria a referência no Storage com o nome 'logo_loja'
+        const logoRef = ref(storage, 'configuracoes/logo_loja');
+        
+        // Faz o Upload
+        await uploadBytes(logoRef, file);
+        
+        // Pega a URL pública da imagem gerada pelo Firebase
+        const downloadUrl = await getDownloadURL(logoRef);
+        
+        // Salva a URL no Banco de Dados (Firestore) para carregar sempre
+        await setDoc(doc(db, "configuracoes", "loja"), { logoUrl: downloadUrl }, { merge: true });
+        
+        // Atualiza a imagem na tela na mesma hora
+        document.getElementById('app-logo-login').src = downloadUrl;
+        document.getElementById('app-logo-sidebar').src = downloadUrl;
+        
+        statusText.innerText = "Logo atualizada com sucesso!";
+        statusText.classList.replace('text-yellow-600', 'text-green-700');
+    } catch (error) {
+        console.error(error);
+        statusText.innerText = "Erro ao enviar imagem. Verifique as regras do Storage.";
+        statusText.classList.replace('text-green-700', 'text-red-600');
+    }
+});
+
 
 // ==========================================
 // 2. LÓGICA DE LOGIN E NÍVEIS DE ACESSO
@@ -53,8 +100,6 @@ document.getElementById('btn-save-theme').addEventListener('click', async () => 
 onAuthStateChanged(auth, (user) => {
     if (user) {
         document.getElementById('login-screen').style.display = 'none';
-        
-        // Verifica Nível de Acesso (Dono vs Barista)
         const badge = document.getElementById('user-badge');
         const adminButtons = document.querySelectorAll('.admin-only');
         
@@ -62,20 +107,16 @@ onAuthStateChanged(auth, (user) => {
             badge.innerText = "Modo: Dono";
             badge.classList.replace('text-gray-600', 'text-yellow-700');
             badge.classList.replace('bg-gray-100', 'bg-yellow-100');
-            adminButtons.forEach(btn => {
-                btn.classList.remove('hidden'); // Libera os botões!
-                btn.classList.add('flex');
-            });
+            adminButtons.forEach(btn => { btn.classList.remove('hidden'); btn.classList.add('flex'); });
         } else {
             badge.innerText = "Modo: Colaborador";
-            // Os botões continuam hidden por padrão no HTML
         }
-
-        loadSettings(); // Carrega a cor salva
-        loadProducts(); // Carrega o cardápio
-        initKDS();      // Inicia a cozinha
+        loadSettings(); 
+        loadProducts(); 
+        initKDS();      
     } else {
         document.getElementById('login-screen').style.display = 'flex';
+        loadSettings(); // Carrega a cor/logo na tela de login mesmo deslogado
     }
 });
 
