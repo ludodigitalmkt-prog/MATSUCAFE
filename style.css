@@ -24,6 +24,29 @@
 
 /* 2. Regras ativadas apenas na hora que a janela de impressão abre */
 @media print {
+    /* Esconde o resto do sistema */
+    #app-container, #login-screen {
+        display: none !important;
+    }
+
+    #print-section {
+        display: block !important;
+        width: 80mm !important; /* Largura da sua bobina */
+        height: auto !important; /* Permite que o recibo cresça conforme os itens */
+        overflow: visible !important;
+        margin: 0;
+        padding: 2mm;
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: bold;
+        color: #000;
+    }
+
+    /* Remove qualquer limite de página do navegador */
+    html, body {
+        height: auto !important;
+        overflow: visible !important;
+    }
+}
     /* Esconde todo o sistema (menus, botões, carrinho, cor de fundo) */
     body {
         background-color: white !important;
