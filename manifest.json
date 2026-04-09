@@ -15,3 +15,35 @@
     }
   ]
 }
+{
+  "id": "abc123xyz",
+  "nome": "João Silva",
+  "limite_mensal_voucher": 150.00,
+  "saldo_disponivel_voucher": 130.00,
+  "pendencias_financeiras": 20.00 
+}
+{
+  "id": "prod_001",
+  "nome": "Coca-Cola Lata",
+  "estoque_total": 50,
+  "lotes": [
+    {
+      "id_lote": "lote_A",
+      "data_entrada": "2026-04-01",
+      "data_vencimento": "2026-05-15",
+      "quantidade": 20,
+      "tipo": "unidade"
+    },
+    {
+      "id_lote": "lote_B",
+      "data_entrada": "2026-04-09",
+      "data_vencimento": "2026-08-10",
+      "quantidade": 30,
+      "tipo": "pack"
+    }
+  ]
+}
+{
+  "id": "config_pdv",
+  "ultimo_numero_pedido": 15
+}
