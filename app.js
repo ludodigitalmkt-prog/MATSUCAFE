@@ -19,7 +19,7 @@ let currentClientHistory = null;
 let appConfig = { nome: "Matsucafe", cnpj: "", endereco: "", telefone: "", msg: "Obrigado e volte sempre!", logo: "" };
 
 // ==========================================
-// TEMA E UI
+// TEMA E NAVEGAÇÃO
 // ==========================================
 document.querySelectorAll('.theme-selector').forEach(btn => {
     btn.onclick = () => {
@@ -61,7 +61,7 @@ if(loginForm) {
 }
 
 // ==========================================
-// CONFIGURAÇÕES (Logo e Infos)
+// CONFIGURAÇÕES (Logo e Ajustes)
 // ==========================================
 function loadSettings() {
     onSnapshot(doc(db, "config", "loja"), (docSnap) => {
@@ -93,7 +93,7 @@ if(btnSaveCfg) {
 }
 
 // ==========================================
-// CRM
+// CRM E VOUCHER
 // ==========================================
 function loadCRM() {
     onSnapshot(collection(db, "clientes"), (snapshot) => {
@@ -206,7 +206,7 @@ window.loadClientHistory = async () => {
 };
 
 // ==========================================
-// ESTOQUE COM LOTES 
+// ESTOQUE COM LOTES INTELIGENTES
 // ==========================================
 async function loadProducts() {
     onSnapshot(collection(db, "produtos"), (snapshot) => {
@@ -296,7 +296,7 @@ if(btnSaveProduct) {
 }
 
 // ==========================================
-// COMBOS (Com Imagem)
+// COMBOS (Agora com Imagem)
 // ==========================================
 async function loadCombos() {
     onSnapshot(collection(db, "combos"), (snapshot) => {
@@ -328,7 +328,7 @@ const btnSaveCombo = document.getElementById('btn-save-combo');
 if(btnSaveCombo) {
     btnSaveCombo.onclick = async () => {
         const nome = document.getElementById('combo-nome').value;
-        const imagem = document.getElementById('combo-imagem').value; // Puxa a imagem
+        const imagem = document.getElementById('combo-imagem').value; 
         const preco = parseFloat(document.getElementById('combo-preco').value || 0);
         const checkboxes = document.querySelectorAll('.combo-prod-check:checked');
         if(!nome || preco <= 0 || checkboxes.length === 0) return alert('Preencha nome, preço e selecione produtos!');
@@ -344,7 +344,7 @@ if(btnSaveCombo) {
 }
 
 // ==========================================
-// QUEBRAS (Baixando Estoque Corretamente)
+// QUEBRAS (Baixando do Estoque)
 // ==========================================
 async function loadQuebras() {
     onSnapshot(collection(db, "quebras"), (snapshot) => {
@@ -373,17 +373,15 @@ if(btnAddQuebra) {
         const estoqueAtual = p.estoque_total !== undefined ? p.estoque_total : p.estoque;
         if(qty > estoqueAtual) return alert("Quantidade de quebra maior que o estoque disponível!");
 
-        // Registra a quebra
         await addDoc(collection(db, "quebras"), { 
             produtoId: pId, produtoNome: p.nome, qtd: qty, motivo: document.getElementById('quebra-motivo').value || '-', 
             valorPerda: p.custo * qty, data: serverTimestamp(), dataSimples: new Date().toISOString().split('T')[0] 
         });
 
-        // Deduz do estoque inteligente (tenta tirar do lote mais próximo do vencimento)
+        // Deduz do estoque (tenta tirar do lote mais velho primeiro)
         let lotesAtuais = p.lotes || [];
         let qtdRestantePraBaixar = qty;
         
-        // Ordena para tirar do mais velho
         lotesAtuais.sort((a, b) => new Date(a.validade) - new Date(b.validade));
         
         for (let lote of lotesAtuais) {
@@ -403,7 +401,7 @@ if(btnAddQuebra) {
         await updateDoc(doc(db, "produtos", pId), { lotes: lotesAtuais, estoque_total: novoEstoqueTotal });
         
         document.getElementById('quebra-qty').value = ''; document.getElementById('quebra-motivo').value = '';
-        alert("Quebra registrada e estoque atualizado!");
+        alert("Quebra registrada e estoque deduzido!");
     };
 }
 
@@ -426,7 +424,6 @@ function initDashboard() {
             if(history) history.innerHTML = '';
             if(vouchersList) vouchersList.innerHTML = '';
 
-            // HISTORICO DE VENDAS
             snapVendas.forEach(docSnap => {
                 const v = docSnap.data();
                 if(v.dataSimples === currentDateFilter) {
@@ -447,7 +444,6 @@ function initDashboard() {
                 }
             });
 
-            // VOUCHERS PENDENTES
             snapVouchers.forEach(docSnap => {
                 const pend = docSnap.data();
                 if(pend.status === 'pendente') {
@@ -484,12 +480,12 @@ function initDashboard() {
     });
 }
 
+// Correção do Relatório em Branco
 const btnPrintDay = document.getElementById('btn-print-day');
 if(btnPrintDay) {
     btnPrintDay.onclick = () => {
-        // Correção do Relatório em Branco: Garantir que a div exista e receba os dados antes de chamar o print.
         const printSec = document.getElementById('print-section');
-        if(!printSec) return alert("Erro: Container de impressão não encontrado no HTML.");
+        if(!printSec) return alert("Erro: Container de impressão não encontrado.");
         
         printSec.innerHTML = `
             <div style="text-align:center; padding: 20px; font-family: sans-serif; color: black;">
@@ -507,15 +503,15 @@ if(btnPrintDay) {
             </div>
         `;
         
-        // Dá um pequeno tempo para o navegador renderizar o innerHTML no DOM invisível antes de imprimir
+        // Aguarda a injeção do HTML no navegador e dispara a impressão garantida
         setTimeout(() => {
             window.print();
-        }, 100);
+        }, 300);
     };
 }
 
 // ==========================================
-// PDV, CARRINHO E RECIBO
+// PDV E CHECKOUT (Com Pagamento Complementar)
 // ==========================================
 function buildCategoryTabs() {
     const categorias = ["Todos", "Combos", ...new Set(products.map(p => p.categoria))];
@@ -536,7 +532,6 @@ function renderPdv(filtro) {
     if(!grid) return;
     grid.innerHTML = '';
     
-    // Mescla Produtos e Combos, usando a imagem do combo se existir
     let catalogo = [...products, ...combos.map(c => ({...c, categoria: 'Combos', imagem: c.imagem || 'https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=300&q=80'}))];
     const filtered = filtro === 'Todos' ? catalogo : catalogo.filter(p => p.categoria === filtro);
     
@@ -580,9 +575,6 @@ if(btnCheckout) {
         let valorPagoNaDiferenca = 0;
         let formaPagamentoComplementar = '';
 
-        // ====================================================
-        // LÓGICA CORRIGIDA: PAGAMENTO COMPLEMENTAR DO VOUCHER
-        // ====================================================
         if (pagamento === 'Voucher') {
             if (!c || c.tipo !== 'Colaborador') return alert("Selecione um Colaborador válido para usar o Voucher!");
             
@@ -591,37 +583,30 @@ if(btnCheckout) {
             if (cartTotal > saldoDisponivel) {
                 const diferenca = cartTotal - saldoDisponivel;
                 
-                // Em vez de forçar a dívida, abrimos um Prompt para perguntar a forma de pagamento da diferença
                 let resposta = prompt(`O saldo de benefício (R$ ${saldoDisponivel.toFixed(2)}) não é suficiente.\nFalta R$ ${diferenca.toFixed(2)}.\n\nDigite a forma de pagamento desta diferença (Ex: PIX, Dinheiro, Cartao) ou digite 'Pendura' para lançar no financeiro a receber:`);
                 
                 if (resposta === null || resposta.trim() === '') {
-                    return alert('Venda cancelada! Forma de pagamento complementar não informada.');
+                    return alert('Venda cancelada! Forma de pagamento não informada.');
                 }
 
                 formaPagamentoComplementar = resposta.trim();
-                pagamento = `Voucher + ${formaPagamentoComplementar}`; // Altera a tag do pagamento para o relatório
+                pagamento = `Voucher + ${formaPagamentoComplementar}`;
                 
                 if (formaPagamentoComplementar.toLowerCase() === 'pendura') {
-                    // Lança como dívida
                     await addDoc(collection(db, "vouchers_pendentes"), {
                         colaborador: clienteNome, colaboradorId: c.id, valor: diferenca,
                         status: 'pendente', nroPedido: nro, dataStr: dataAtualStr, timestamp: serverTimestamp()
                     });
                 } else {
-                    // Se pagou em Dinheiro/Pix, não vai pros vouchers pendentes, o valor já entra no caixa sob a nova Tag de Pagamento
                     valorPagoNaDiferenca = diferenca;
                 }
-
-                // Desconta todo o saldo que restava
                 await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: 0 });
 
             } else {
-                // Tem saldo suficiente, desconta normalmente
                 await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: saldoDisponivel - cartTotal });
             }
         }
 
-        // Custo Total dos Itens
         let custoDaVenda = 0;
         cart.forEach(item => {
             if (item.isCombo) {
@@ -631,7 +616,6 @@ if(btnCheckout) {
             }
         });
 
-        // 1. Salvar Venda
         await addDoc(collection(db, "vendas"), {
             nroPedido: nro, total: cartTotal, custoTotal: custoDaVenda, 
             cliente: clienteNome, pagamento: pagamento, cpf: cpfNaNota,
@@ -639,7 +623,6 @@ if(btnCheckout) {
             data: serverTimestamp(), dataSimples: dataAtualStr, itens: cart.map(i => ({ nome: i.nome, qtd: i.qty, preco: i.preco }))
         });
 
-        // 2. Baixa Estoque
         for(const item of cart) {
             if (item.isCombo) {
                 for(const sub of item.itens) {
@@ -652,7 +635,6 @@ if(btnCheckout) {
             }
         }
 
-        // 3. Imprimir
         let cupomItems = '';
         cart.forEach(i => { cupomItems += `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>${i.qty}x ${i.nome}</span><span>${(i.preco * i.qty).toFixed(2)}</span></div>`; });
         
@@ -675,7 +657,7 @@ if(btnCheckout) {
                 <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:bold; color: black; font-family: monospace;"><span>TOTAL</span><span>R$ ${cartTotal.toFixed(2)}</span></div>
                 <br><br>
             `;
-            setTimeout(() => { window.print(); }, 100);
+            setTimeout(() => { window.print(); }, 300);
         }
         
         cart = []; updateCart(); document.getElementById('pdv-cpf').value = '';
@@ -683,7 +665,7 @@ if(btnCheckout) {
 }
 
 // ==========================================
-// FUNÇÕES GLOBAIS DE MODAL (Vinculadas ao Window)
+// FUNÇÕES GLOBAIS DE MODAL (Evita Erros)
 // ==========================================
 window.closeModals = () => {
     document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden'));
