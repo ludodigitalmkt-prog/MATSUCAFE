@@ -18,6 +18,7 @@
 
     <div id="login-screen" class="theme-bg absolute inset-0 z-[100] flex items-center justify-center flex-col">
         <form id="login-form" class="bg-white p-10 rounded-[2rem] shadow-2xl w-[400px] max-w-[90%] text-center border-b-8 theme-border">
+            <img src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=200&q=80" alt="Logo" class="w-24 h-24 mx-auto rounded-full object-cover mb-4 shadow-md border-4 border-white">
             <h2 class="text-3xl font-black text-gray-800 mb-1 tracking-tight">Matsucafe</h2>
             <p class="text-gray-400 mb-8 font-medium">Gestão e PDV</p>
             <input type="email" id="login-email" placeholder="E-mail" required class="w-full p-4 mb-4 bg-gray-50 border rounded-2xl outline-none">
@@ -30,6 +31,9 @@
     <div id="app-container" class="flex w-full h-full">
         
         <aside class="hidden md:flex flex-col w-24 theme-bg text-white items-center py-6 gap-4 shadow-2xl z-30 overflow-y-auto hide-scrollbar rounded-r-3xl">
+            <div class="mb-4">
+                <img src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=100&q=80" class="w-12 h-12 rounded-full border-2 border-white/20 object-cover">
+            </div>
             <button id="nav-pdv" class="w-16 h-16 flex flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-shopping-cart text-2xl"></i><span class="text-[10px] font-medium">PDV</span></button>
             <button id="nav-crm" class="w-16 h-16 flex flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-users text-2xl"></i><span class="text-[10px] font-medium">Contatos</span></button>
             <button id="nav-menu" class="admin-only hidden w-16 h-16 flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-package text-2xl"></i><span class="text-[10px] font-medium">Estoque</span></button>
@@ -40,9 +44,10 @@
         </aside>
 
         <main id="tab-pdv" class="flex-1 flex flex-col h-full overflow-hidden bg-gray-50">
-            <header class="bg-white shadow-sm p-4 flex justify-between items-center z-10 border-b border-gray-200">
+            <header class="bg-white shadow-sm p-4 flex flex-wrap justify-between items-center z-10 border-b border-gray-200 gap-4">
                 <div><h1 class="text-2xl font-black text-gray-800">Frente de Caixa</h1></div>
-                <div class="flex gap-4">
+                <div class="flex flex-wrap gap-2 md:gap-4 items-center">
+                    <input type="text" id="pdv-cpf" placeholder="CPF na Nota (Opcional)" class="p-3 bg-gray-50 border rounded-xl text-sm outline-none w-48">
                     <select id="pdv-cliente" class="p-3 bg-gray-50 border rounded-xl font-bold text-gray-700 outline-none">
                         <option value="Avulso">Cliente Avulso</option>
                     </select>
@@ -58,7 +63,10 @@
         <main id="tab-crm" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-black text-gray-800">Clientes e Colaboradores</h2>
-                <button onclick="openClientModal()" class="theme-bg text-white px-6 py-3 rounded-2xl font-bold shadow-lg">+ Novo Cadastro</button>
+                <div class="flex gap-4">
+                    <input type="text" id="search-cliente" placeholder="Pesquisar por nome..." class="p-3 bg-white border rounded-2xl w-64 shadow-sm outline-none">
+                    <button onclick="openClientModal()" class="theme-bg text-white px-6 py-3 rounded-2xl font-bold shadow-lg">+ Novo Cadastro</button>
+                </div>
             </div>
             <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
                 <table class="w-full text-left">
@@ -72,7 +80,7 @@
 
         <main id="tab-menu" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
             <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-black text-gray-800">Controle de Estoque e Lotes</h2>
+                <h2 class="text-3xl font-black text-gray-800">Controle de Estoque</h2>
                 <button onclick="openProductModal()" class="theme-bg text-white px-6 py-3 rounded-2xl font-bold shadow-lg">+ Novo Produto</button>
             </div>
             <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
@@ -86,7 +94,7 @@
         </main>
 
         <main id="tab-quebras" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
-            <h2 class="text-3xl font-black text-gray-800 mb-8">Registro de Quebras e Perdas</h2>
+            <h2 class="text-3xl font-black text-gray-800 mb-8">Registro de Quebras</h2>
             <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 mb-8">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <select id="quebra-produto" class="p-4 bg-gray-50 rounded-2xl border outline-none"></select>
@@ -102,13 +110,13 @@
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-black text-gray-800">Relatório Financeiro</h2>
                 <div class="flex gap-2">
-                    <button id="btn-print-day" class="bg-white border-2 border-gray-200 px-6 py-3 rounded-2xl font-bold flex items-center gap-2"><i class="ph ph-printer"></i> Imprimir Fechamento</button>
+                    <button id="btn-print-day" class="bg-white border-2 border-gray-200 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-gray-50"><i class="ph ph-printer"></i> Imprimir</button>
                     <input type="date" id="filtro-data" class="p-3 rounded-2xl border font-bold">
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-white p-8 rounded-[2rem] shadow-sm border-b-4 border-green-500 text-center">
-                    <p class="text-gray-400 text-xs font-black uppercase mb-1">Entradas (Vendas)</p>
+                    <p class="text-gray-400 text-xs font-black uppercase mb-1">Entradas</p>
                     <h3 id="dash-revenue" class="text-4xl font-black">R$ 0,00</h3>
                 </div>
                 <div class="bg-white p-8 rounded-[2rem] shadow-sm border-b-4 border-red-500 text-center">
@@ -120,18 +128,33 @@
                     <h3 id="dash-net" class="text-4xl font-black">R$ 0,00</h3>
                 </div>
             </div>
+            <h3 class="text-xl font-bold mb-4">Lançamentos do Dia</h3>
             <div id="sales-history-list" class="flex flex-col gap-3"></div>
         </main>
 
         <main id="tab-settings" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
             <h2 class="text-3xl font-black text-gray-800 mb-8">Configurações do Sistema</h2>
-            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 max-w-xl">
-                <h3 class="text-lg font-bold mb-4">Cor do Tema</h3>
-                <div class="flex gap-4">
-                    <button class="w-12 h-12 rounded-full bg-[#14532d] border-4 border-white shadow-md theme-selector" data-color="#14532d"></button>
-                    <button class="w-12 h-12 rounded-full bg-[#7c3aed] border-4 border-white shadow-md theme-selector" data-color="#7c3aed"></button>
-                    <button class="w-12 h-12 rounded-full bg-[#ea580c] border-4 border-white shadow-md theme-selector" data-color="#ea580c"></button>
-                    <button class="w-12 h-12 rounded-full bg-[#be123c] border-4 border-white shadow-md theme-selector" data-color="#be123c"></button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold mb-4">Cor do Tema</h3>
+                    <div class="flex gap-4">
+                        <button class="w-12 h-12 rounded-full bg-[#14532d] border-4 border-white shadow-md theme-selector" data-color="#14532d"></button>
+                        <button class="w-12 h-12 rounded-full bg-[#7c3aed] border-4 border-white shadow-md theme-selector" data-color="#7c3aed"></button>
+                        <button class="w-12 h-12 rounded-full bg-[#ea580c] border-4 border-white shadow-md theme-selector" data-color="#ea580c"></button>
+                        <button class="w-12 h-12 rounded-full bg-[#be123c] border-4 border-white shadow-md theme-selector" data-color="#be123c"></button>
+                        <button class="w-12 h-12 rounded-full bg-[#1e3a8a] border-4 border-white shadow-md theme-selector" data-color="#1e3a8a"></button>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold mb-4">Dados do Recibo</h3>
+                    <div class="flex flex-col gap-3">
+                        <input type="text" id="cfg-nome" placeholder="Nome da Loja" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none font-bold">
+                        <input type="text" id="cfg-cnpj" placeholder="CNPJ" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
+                        <input type="text" id="cfg-endereco" placeholder="Endereço Completo" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
+                        <input type="text" id="cfg-telefone" placeholder="Telefone/WhatsApp" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
+                        <input type="text" id="cfg-msg" placeholder="Mensagem de Agradecimento" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
+                        <button id="btn-save-cfg" class="theme-bg text-white font-bold p-4 rounded-2xl mt-2 shadow-lg">Salvar Informações</button>
+                    </div>
                 </div>
             </div>
         </main>
@@ -151,39 +174,55 @@
     </div>
 
     <div id="modal-produto" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[2.5rem] w-full max-w-2xl p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div class="flex justify-between items-center mb-6">
-                <h3 id="modal-title" class="text-2xl font-black">Produto</h3>
-                <button onclick="closeModals()" class="text-3xl text-gray-400">&times;</button>
-            </div>
+        <div class="bg-white rounded-[2.5rem] w-full max-w-2xl p-8 shadow-2xl">
+            <div class="flex justify-between items-center mb-6"><h3 id="modal-title" class="text-2xl font-black">Produto</h3><button onclick="closeModals()" class="text-3xl">&times;</button></div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <input type="hidden" id="edit-id">
-                <div class="md:col-span-2"><label class="text-xs font-bold text-gray-400 uppercase">Nome</label><input type="text" id="prod-nome" class="w-full p-4 bg-gray-50 border rounded-2xl mt-1 outline-none"></div>
-                <div><label class="text-xs font-bold text-gray-400 uppercase">Categoria</label><input type="text" id="prod-categoria" class="w-full p-4 bg-gray-50 border rounded-2xl mt-1 outline-none"></div>
-                <div><label class="text-xs font-bold text-gray-400 uppercase">Preço Venda</label><input type="number" step="0.01" id="prod-venda" class="w-full p-4 bg-gray-50 border rounded-2xl mt-1 outline-none"></div>
-                <div><label class="text-xs font-bold text-gray-400 uppercase">Custo Unitário</label><input type="number" step="0.01" id="prod-custo" class="w-full p-4 bg-gray-50 border rounded-2xl mt-1 outline-none"></div>
-                <div><label class="text-xs font-bold text-gray-400 uppercase">Estoque Inicial</label><input type="number" id="prod-estoque" class="w-full p-4 bg-gray-50 border rounded-2xl mt-1 outline-none"></div>
-                <div><label class="text-xs font-bold text-gray-400 uppercase">Data Vencimento</label><input type="date" id="prod-validade" class="w-full p-4 bg-gray-50 border rounded-2xl mt-1 text-red-500 font-bold outline-none"></div>
-                <div class="md:col-span-2"><label class="text-xs font-bold text-gray-400 uppercase">Link da Imagem</label><input type="text" id="prod-imagem" class="w-full p-4 bg-gray-50 border rounded-2xl mt-1 outline-none"></div>
+                <div class="md:col-span-2"><input type="text" id="prod-nome" placeholder="Nome" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
+                <div><input type="text" id="prod-categoria" placeholder="Categoria" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
+                <div><input type="number" step="0.01" id="prod-venda" placeholder="Preço Venda" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
+                <div><input type="number" step="0.01" id="prod-custo" placeholder="Custo Unitário" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
+                <div><input type="number" id="prod-estoque" placeholder="Estoque Inicial" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
+                <div><label class="text-xs font-bold text-gray-400">Vencimento</label><input type="date" id="prod-validade" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none text-red-500 font-bold"></div>
+                <div class="md:col-span-2"><input type="text" id="prod-imagem" placeholder="Link da Imagem" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
             </div>
-            <button id="btn-save-product" class="w-full theme-bg text-white py-5 rounded-2xl font-black text-lg shadow-xl">Salvar</button>
+            <button id="btn-save-product" class="w-full theme-bg text-white py-4 rounded-2xl font-black">Salvar</button>
         </div>
     </div>
 
     <div id="modal-cliente" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
         <div class="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-black">Cadastro</h3>
-                <button onclick="closeModals()" class="text-3xl text-gray-400">&times;</button>
-            </div>
+            <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Cadastro</h3><button onclick="closeModals()" class="text-3xl">&times;</button></div>
             <input type="hidden" id="cli-id">
-            <select id="cli-tipo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 font-bold outline-none">
+            <select id="cli-tipo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 font-bold outline-none" onchange="toggleVoucher()">
                 <option value="Cliente">Cliente</option>
                 <option value="Colaborador">Colaborador</option>
             </select>
             <input type="text" id="cli-nome" placeholder="Nome Completo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none">
-            <input type="text" id="cli-telefone" placeholder="Telefone/WhatsApp" class="w-full p-4 bg-gray-50 border rounded-2xl mb-6 outline-none">
+            <input type="text" id="cli-telefone" placeholder="Telefone/WhatsApp" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none">
+            <div id="cli-voucher-container" class="hidden mb-6">
+                <input type="number" step="0.01" id="cli-voucher" placeholder="Limite Voucher Mês (R$)" class="w-full p-4 bg-purple-50 border border-purple-200 rounded-2xl outline-none font-bold text-purple-700">
+            </div>
             <button id="btn-save-client" class="w-full theme-bg text-white py-4 rounded-2xl font-black shadow-xl">Salvar</button>
+        </div>
+    </div>
+
+    <div id="modal-historico" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-2xl p-8 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 class="text-2xl font-black text-gray-800" id="hist-nome">Nome</h3>
+                    <p class="text-gray-500 font-bold">Total Gasto: <span id="hist-total" class="text-green-600">R$ 0,00</span></p>
+                </div>
+                <button onclick="closeModals()" class="text-3xl text-gray-400">&times;</button>
+            </div>
+            <div class="flex gap-2 mb-4 bg-gray-50 p-2 rounded-2xl">
+                <input type="date" id="hist-data-inicio" class="p-2 border rounded-xl outline-none text-sm w-full">
+                <input type="date" id="hist-data-fim" class="p-2 border rounded-xl outline-none text-sm w-full">
+                <button onclick="loadClientHistory()" class="bg-blue-500 text-white px-4 rounded-xl font-bold">Filtrar</button>
+            </div>
+            <div id="hist-lista" class="flex-1 overflow-y-auto mb-4 border rounded-2xl p-4 bg-gray-50 hide-scrollbar flex flex-col gap-2"></div>
+            <button onclick="printHistory()" class="w-full bg-gray-800 text-white py-4 rounded-2xl font-black shadow-xl flex items-center justify-center gap-2"><i class="ph ph-printer"></i> Imprimir Histórico</button>
         </div>
     </div>
 
@@ -191,23 +230,18 @@
 
     <script type="module" src="app.js"></script>
     <script>
-        // Funções globais de UI
+        // Funções Globais de UI UI 
         function closeModals() {
-            document.getElementById('modal-produto').classList.add('hidden');
-            document.getElementById('modal-cliente').classList.add('hidden');
+            document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden'));
             document.querySelectorAll('input').forEach(i => { if(i.type !== 'date') i.value = '' });
         }
         function openProductModal(p = null) {
             document.getElementById('modal-produto').classList.remove('hidden');
-            document.getElementById('modal-title').innerText = p ? "Editar Produto" : "Novo Produto";
             document.getElementById('edit-id').value = p ? p.id : '';
             if(p) {
-                document.getElementById('prod-nome').value = p.nome;
-                document.getElementById('prod-categoria').value = p.categoria;
-                document.getElementById('prod-venda').value = p.preco;
-                document.getElementById('prod-custo').value = p.custo;
-                document.getElementById('prod-estoque').value = p.estoque;
-                document.getElementById('prod-validade').value = p.validade || '';
+                document.getElementById('prod-nome').value = p.nome; document.getElementById('prod-categoria').value = p.categoria;
+                document.getElementById('prod-venda').value = p.preco; document.getElementById('prod-custo').value = p.custo;
+                document.getElementById('prod-estoque').value = p.estoque; document.getElementById('prod-validade').value = p.validade || '';
                 document.getElementById('prod-imagem').value = p.imagem;
             }
         }
@@ -215,10 +249,14 @@
             document.getElementById('modal-cliente').classList.remove('hidden');
             document.getElementById('cli-id').value = c ? c.id : '';
             if(c) {
-                document.getElementById('cli-tipo').value = c.tipo;
-                document.getElementById('cli-nome').value = c.nome;
-                document.getElementById('cli-telefone').value = c.telefone;
-            }
+                document.getElementById('cli-tipo').value = c.tipo; document.getElementById('cli-nome').value = c.nome;
+                document.getElementById('cli-telefone').value = c.telefone; document.getElementById('cli-voucher').value = c.voucher || '';
+            } else { document.getElementById('cli-tipo').value = 'Cliente'; }
+            toggleVoucher();
+        }
+        function toggleVoucher() {
+            const tipo = document.getElementById('cli-tipo').value;
+            document.getElementById('cli-voucher-container').style.display = tipo === 'Colaborador' ? 'block' : 'none';
         }
     </script>
 </body>
