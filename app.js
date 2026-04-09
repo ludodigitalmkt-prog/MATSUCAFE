@@ -61,7 +61,7 @@ if(loginForm) {
 }
 
 // ==========================================
-// CONFIGURAÇÕES (Logo e Ajustes)
+// CONFIGURAÇÕES
 // ==========================================
 function loadSettings() {
     onSnapshot(doc(db, "config", "loja"), (docSnap) => {
@@ -93,7 +93,7 @@ if(btnSaveCfg) {
 }
 
 // ==========================================
-// CRM E VOUCHER
+// CRM
 // ==========================================
 function loadCRM() {
     onSnapshot(collection(db, "clientes"), (snapshot) => {
@@ -136,16 +136,16 @@ function renderCRM(searchTerm = '') {
         const limiteReal = parseFloat(c.voucher || 0).toFixed(2);
         const saldoReal = parseFloat(c.saldo_voucher !== undefined ? c.saldo_voucher : c.voucher || 0).toFixed(2);
         
-        const limitInfo = isColab ? `<br><span class="text-[10px] text-purple-600 font-bold">Limite: R$ ${limiteReal} | Restante: R$ ${saldoReal}</span>` : '';
+        const limitInfo = isColab ? `<br><span class="text-[10px] text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded-md border border-purple-100 mt-1 inline-block">Limite: R$ ${limiteReal} | Restante: R$ ${saldoReal}</span>` : '';
         const tr = document.createElement('tr');
-        tr.className = "border-b hover:bg-gray-50 transition cursor-pointer";
+        tr.className = "border-b border-gray-50 hover:bg-gray-50 transition cursor-pointer";
         tr.innerHTML = `
-            <td class="p-4 font-bold text-gray-800" onclick="window.openHistoryModal('${c.nome}')">${c.nome}</td>
-            <td class="p-4" onclick="window.openHistoryModal('${c.nome}')"><span class="${isColab ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'} px-3 py-1 rounded-full text-xs font-bold">${c.tipo}</span>${limitInfo}</td>
-            <td class="p-4 text-gray-500" onclick="window.openHistoryModal('${c.nome}')">${c.telefone || '---'}</td>
-            <td class="p-4 text-right">
-                <button class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg btn-edit"><i class="ph ph-pencil-simple text-xl"></i></button>
-                <button class="text-red-500 hover:bg-red-50 p-2 rounded-lg btn-del"><i class="ph ph-trash text-xl"></i></button>
+            <td class="p-4 font-black text-gray-800 uppercase" onclick="window.openHistoryModal('${c.nome}')">${c.nome}</td>
+            <td class="p-4" onclick="window.openHistoryModal('${c.nome}')"><span class="${isColab ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'} px-3 py-1 rounded-lg text-xs font-black shadow-sm">${c.tipo}</span>${limitInfo}</td>
+            <td class="p-4 text-gray-500 font-bold" onclick="window.openHistoryModal('${c.nome}')">${c.telefone || '---'}</td>
+            <td class="p-4 text-right flex justify-end gap-2">
+                <button class="bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                <button class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-del"><i class="ph ph-trash text-lg"></i></button>
             </td>
         `;
         tr.querySelector('.btn-edit').onclick = () => window.openClientModal(c);
@@ -195,18 +195,18 @@ window.loadClientHistory = async () => {
         
         total += v.total;
         lista.innerHTML += `
-            <div class="bg-white p-3 rounded-xl shadow-sm border text-sm flex justify-between items-center">
-                <div><p class="font-bold">Pedido #${v.nroPedido}</p><p class="text-xs text-gray-500">${v.dataSimples.split('-').reverse().join('/')} - Pgto: ${v.pagamento}</p></div>
-                <div class="font-black text-green-600">R$ ${v.total.toFixed(2)}</div>
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 text-sm flex justify-between items-center shadow-sm">
+                <div><p class="font-black text-gray-800">Pedido #${v.nroPedido}</p><p class="text-xs text-gray-500 font-bold mt-1">${v.dataSimples.split('-').reverse().join('/')} - Pgto: ${v.pagamento}</p></div>
+                <div class="font-black text-green-600 text-lg">R$ ${v.total.toFixed(2)}</div>
             </div>
         `;
     });
     document.getElementById('hist-total').innerText = `R$ ${total.toFixed(2)}`;
-    if(lista.innerHTML === '') lista.innerHTML = '<p class="text-gray-400 text-center text-sm p-4">Nenhuma compra encontrada.</p>';
+    if(lista.innerHTML === '') lista.innerHTML = '<p class="text-gray-400 text-center text-sm p-4 font-bold">Nenhuma compra encontrada no período.</p>';
 };
 
 // ==========================================
-// ESTOQUE COM LOTES INTELIGENTES
+// ESTOQUE COM LOTES 
 // ==========================================
 async function loadProducts() {
     onSnapshot(collection(db, "produtos"), (snapshot) => {
@@ -239,29 +239,29 @@ async function loadProducts() {
                 const diffDias = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 3600 * 24));
                 const dataFormatada = loteMaisProximo.validade.split('-').reverse().join('/');
 
-                if (diffDias < 0) statusVencimentoHtml = `<span class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-black animate-pulse">VENCIDO (${dataFormatada})</span>`;
-                else if (diffDias <= 7) statusVencimentoHtml = `<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-black">Alerta: ${diffDias} dias (${dataFormatada})</span>`;
-                else if (diffDias <= 30) statusVencimentoHtml = `<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg text-xs font-bold">Vence em ${diffDias} dias</span>`;
+                if (diffDias < 0) statusVencimentoHtml = `<span class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-black animate-pulse shadow-sm">VENCIDO (${dataFormatada})</span>`;
+                else if (diffDias <= 7) statusVencimentoHtml = `<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-black shadow-sm">Alerta: ${diffDias} dias (${dataFormatada})</span>`;
+                else if (diffDias <= 30) statusVencimentoHtml = `<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg text-xs font-bold shadow-sm">Vence em ${diffDias} dias</span>`;
                 else statusVencimentoHtml = `<span class="text-green-600 font-bold">${dataFormatada}</span>`;
             }
 
             if(list) {
                 const tr = document.createElement('tr'); 
-                tr.className = "border-b hover:bg-gray-50 transition";
+                tr.className = "border-b border-gray-50 hover:bg-gray-50 transition";
                 tr.innerHTML = `
-                    <td class="p-5 flex items-center gap-3"><img src="${p.imagem}" class="w-10 h-10 rounded-lg object-cover shadow-sm">
-                        <div><span class="font-black text-gray-800 block">${p.nome}</span><span class="text-[10px] text-gray-400 font-bold">${(p.lotes || []).length} lote(s)</span></div>
+                    <td class="p-5 flex items-center gap-3"><img src="${p.imagem}" class="w-12 h-12 rounded-xl object-contain bg-white shadow-sm border border-gray-100 p-1">
+                        <div><span class="font-black text-gray-800 block">${p.nome}</span><span class="text-[10px] text-gray-400 font-bold uppercase">${(p.lotes || []).length} lote(s)</span></div>
                     </td>
-                    <td class="p-5"><span class="bg-gray-100 px-3 py-1 rounded-full text-xs font-bold border">${p.categoria}</span></td>
+                    <td class="p-5"><span class="bg-gray-100 px-3 py-1 rounded-lg text-xs font-bold border border-gray-200">${p.categoria}</span></td>
                     <td class="p-5 font-black text-lg ${totalEstoque <= 5 ? 'text-red-500' : 'text-blue-600'}">${totalEstoque} un</td>
                     <td class="p-5">${statusVencimentoHtml}</td>
-                    <td class="p-5 text-right">
-                        <button class="bg-blue-50 text-blue-500 hover:bg-blue-100 p-2 rounded-xl transition btn-add-lote" title="Add Lote/Editar"><i class="ph ph-plus-circle text-xl"></i></button> 
-                        <button class="bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-xl transition btn-del"><i class="ph ph-trash text-xl"></i></button>
+                    <td class="p-5 text-right flex justify-end gap-2">
+                        <button class="bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-add-lote" title="Add Lote/Editar"><i class="ph ph-pencil-simple text-lg"></i></button> 
+                        <button class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-del"><i class="ph ph-trash text-lg"></i></button>
                     </td>
                 `;
                 tr.querySelector('.btn-add-lote').onclick = () => window.openProductModal(p);
-                tr.querySelector('.btn-del').onclick = async () => { if(confirm('Excluir produto e lotes?')) await deleteDoc(doc(db, "produtos", p.id)); };
+                tr.querySelector('.btn-del').onclick = async () => { if(confirm('Excluir produto e lotes permanentemente?')) await deleteDoc(doc(db, "produtos", p.id)); };
                 list.appendChild(tr); 
             }
             if(quebraSelect) quebraSelect.innerHTML += `<option value="${p.id}">${p.nome} (${totalEstoque} disp.)</option>`;
@@ -296,7 +296,7 @@ if(btnSaveProduct) {
 }
 
 // ==========================================
-// COMBOS (Agora com Imagem)
+// COMBOS
 // ==========================================
 async function loadCombos() {
     onSnapshot(collection(db, "combos"), (snapshot) => {
@@ -306,16 +306,16 @@ async function loadCombos() {
         snapshot.forEach((docSnap) => {
             const c = { id: docSnap.id, ...docSnap.data() }; combos.push(c);
             const itemsText = c.itens.map(i => `${i.nome}`).join(' + ');
-            const imgHtml = c.imagem ? `<img src="${c.imagem}" class="w-12 h-12 rounded-lg object-cover mr-3">` : '';
+            const imgHtml = c.imagem ? `<img src="${c.imagem}" class="w-14 h-14 rounded-xl object-contain border border-gray-100 p-1 mr-4 bg-gray-50 shadow-sm">` : '';
             
             const div = document.createElement('div');
-            div.className = "p-4 border rounded-2xl flex justify-between items-center hover:shadow-md transition bg-white";
+            div.className = "p-5 border border-gray-100 rounded-2xl flex justify-between items-center hover:shadow-lg transition bg-white shadow-sm";
             div.innerHTML = `
                 <div class="flex items-center">
                     ${imgHtml}
-                    <div><h4 class="font-black text-gray-800">${c.nome}</h4><p class="text-[10px] text-gray-500 font-bold">${itemsText}</p><p class="text-green-600 font-black mt-1">R$ ${c.preco.toFixed(2)}</p></div>
+                    <div><h4 class="font-black text-gray-800 text-lg">${c.nome}</h4><p class="text-xs text-gray-500 font-bold uppercase mt-1">${itemsText}</p><p class="text-green-600 font-black mt-2 text-xl">R$ ${c.preco.toFixed(2)}</p></div>
                 </div>
-                <button class="bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-xl btn-del"><i class="ph ph-trash text-xl"></i></button>
+                <button class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-del"><i class="ph ph-trash text-xl"></i></button>
             `;
             div.querySelector('.btn-del').onclick = async () => { if(confirm('Excluir Combo?')) await deleteDoc(doc(db, "combos", c.id)); };
             list.appendChild(div);
@@ -344,7 +344,7 @@ if(btnSaveCombo) {
 }
 
 // ==========================================
-// QUEBRAS (Baixando do Estoque)
+// QUEBRAS
 // ==========================================
 async function loadQuebras() {
     onSnapshot(collection(db, "quebras"), (snapshot) => {
@@ -353,9 +353,9 @@ async function loadQuebras() {
         list.innerHTML = '';
         snapshot.forEach(docSnap => {
             const q = docSnap.data(); const div = document.createElement('div');
-            div.className = "bg-white p-4 rounded-2xl flex justify-between items-center border border-red-50 shadow-sm";
-            div.innerHTML = `<div><p class="font-bold text-red-600">${q.produtoNome} x${q.qtd}</p><p class="text-xs text-gray-400">${q.motivo} | Perda: R$ ${(q.valorPerda || 0).toFixed(2)}</p></div><button class="text-gray-300 hover:text-red-500 btn-del"><i class="ph ph-trash text-xl"></i></button>`;
-            div.querySelector('.btn-del').onclick = async () => { if(confirm('Apagar registro?')) await deleteDoc(doc(db, "quebras", docSnap.id)); };
+            div.className = "bg-white p-4 rounded-2xl flex justify-between items-center border border-red-100 shadow-sm";
+            div.innerHTML = `<div><p class="font-black text-red-600 uppercase">${q.produtoNome} x${q.qtd}</p><p class="text-xs font-bold text-gray-500 mt-1">${q.motivo} | Perda: R$ ${(q.valorPerda || 0).toFixed(2)}</p></div><button class="bg-gray-100 hover:bg-red-500 hover:text-white transition text-gray-400 p-3 rounded-xl shadow-sm btn-del"><i class="ph ph-trash text-lg"></i></button>`;
+            div.querySelector('.btn-del').onclick = async () => { if(confirm('Apagar registro de quebra?')) await deleteDoc(doc(db, "quebras", docSnap.id)); };
             list.appendChild(div);
         });
     });
@@ -378,7 +378,6 @@ if(btnAddQuebra) {
             valorPerda: p.custo * qty, data: serverTimestamp(), dataSimples: new Date().toISOString().split('T')[0] 
         });
 
-        // Deduz do estoque (tenta tirar do lote mais velho primeiro)
         let lotesAtuais = p.lotes || [];
         let qtdRestantePraBaixar = qty;
         
@@ -406,7 +405,7 @@ if(btnAddQuebra) {
 }
 
 // ==========================================
-// FINANCEIRO AVANÇADO (LUCRO E VOUCHERS)
+// FINANCEIRO AVANÇADO 
 // ==========================================
 const filtroData = document.getElementById('filtro-data');
 if(filtroData) {
@@ -432,13 +431,13 @@ function initDashboard() {
                     
                     if(history) {
                         const div = document.createElement('div');
-                        div.className = "bg-white p-4 rounded-2xl flex justify-between border items-center shadow-sm";
+                        div.className = "bg-white p-5 rounded-[1.5rem] border border-gray-100 flex justify-between items-center shadow-sm hover:shadow-md transition";
                         div.innerHTML = `
-                            <div class="flex-1"><p class="font-bold text-gray-800">Pedido #${v.nroPedido}</p><p class="text-xs text-gray-500">${v.cliente} | Pgto: ${v.pagamento}</p></div>
-                            <div class="text-right mr-4"><p class="font-black text-green-600">R$ ${v.total.toFixed(2)}</p></div>
-                            <button class="bg-red-50 text-red-500 p-2 rounded-xl btn-delete"><i class="ph ph-trash"></i></button>
+                            <div class="flex-1"><p class="font-black text-gray-800 text-lg">Pedido #${v.nroPedido}</p><p class="text-xs text-gray-500 font-bold mt-1">${v.cliente} | Pgto: ${v.pagamento}</p></div>
+                            <div class="text-right mr-5"><p class="font-black text-green-600 text-xl">R$ ${v.total.toFixed(2)}</p></div>
+                            <button class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-delete"><i class="ph ph-trash text-lg"></i></button>
                         `;
-                        div.querySelector('.btn-delete').onclick = async () => { if(confirm('Excluir Venda?')) await deleteDoc(doc(db, "vendas", docSnap.id)); };
+                        div.querySelector('.btn-delete').onclick = async () => { if(confirm('Atenção: Excluir esta Venda? O valor sumirá do financeiro.')) await deleteDoc(doc(db, "vendas", docSnap.id)); };
                         history.appendChild(div);
                     }
                 }
@@ -450,21 +449,21 @@ function initDashboard() {
                     pendenteTotal += pend.valor;
                     if(vouchersList) {
                         const div = document.createElement('div');
-                        div.className = "bg-purple-50 p-4 rounded-2xl border border-purple-100 flex justify-between items-center";
+                        div.className = "bg-purple-50 p-5 rounded-[1.5rem] border border-purple-100 flex justify-between items-center shadow-sm hover:shadow-md transition";
                         div.innerHTML = `
-                            <div><p class="font-bold text-purple-800">${pend.colaborador}</p><p class="text-xs text-purple-500">Ref: Pedido #${pend.nroPedido}</p></div>
-                            <div class="text-right mr-3"><p class="font-black text-purple-700">R$ ${pend.valor.toFixed(2)}</p></div>
-                            <button class="bg-green-500 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-md btn-receber">Dar Baixa</button>
+                            <div><p class="font-black text-purple-800 text-lg">${pend.colaborador}</p><p class="text-xs text-purple-500 font-bold mt-1">Ref: Pedido #${pend.nroPedido}</p></div>
+                            <div class="text-right mr-4"><p class="font-black text-purple-700 text-xl">R$ ${pend.valor.toFixed(2)}</p></div>
+                            <button class="bg-green-500 hover:bg-green-600 transition text-white font-black text-sm px-4 py-3 rounded-xl shadow-md btn-receber"><i class="ph ph-check-circle"></i> Receber</button>
                         `;
                         div.querySelector('.btn-receber').onclick = async () => {
-                            if(confirm(`Confirmar recebimento de R$ ${pend.valor.toFixed(2)} de ${pend.colaborador}?`)) {
+                            if(confirm(`Confirmar recebimento financeiro de R$ ${pend.valor.toFixed(2)} referente ao colaborador ${pend.colaborador}?`)) {
                                 await updateDoc(doc(db, "vouchers_pendentes", docSnap.id), { status: 'pago', dataPagamento: new Date().toISOString() });
                                 const c = clients.find(cli => cli.nome === pend.colaborador);
                                 if(c) {
                                     const novoSaldo = (parseFloat(c.saldo_voucher || 0) + pend.valor);
                                     await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
                                 }
-                                alert('Baixa realizada com sucesso! Limite restaurado.');
+                                alert('Baixa financeira realizada! Limite restaurado no benefício dele.');
                             }
                         };
                         vouchersList.appendChild(div);
@@ -480,7 +479,7 @@ function initDashboard() {
     });
 }
 
-// Correção do Relatório em Branco
+// Relatório Moderno (Aplica as Novas Classes CSS)
 const btnPrintDay = document.getElementById('btn-print-day');
 if(btnPrintDay) {
     btnPrintDay.onclick = () => {
@@ -488,40 +487,39 @@ if(btnPrintDay) {
         if(!printSec) return alert("Erro: Container de impressão não encontrado.");
         
         printSec.innerHTML = `
-            <div style="text-align:center; padding: 20px; font-family: sans-serif; color: black;">
-                <h2 style="font-size: 24px; margin-bottom: 10px;">FECHAMENTO FINANCEIRO</h2>
-                <p><strong>DATA:</strong> ${currentDateFilter}</p>
-                <hr style="border-top:1px dashed #000; margin: 20px 0;">
-                <p style="font-size: 16px;">ENTRADAS BRUTAS: ${document.getElementById('dash-revenue').innerText}</p>
-                <p style="font-size: 16px;">CUSTO DE PRODUTOS: ${document.getElementById('dash-cost').innerText}</p>
-                <h3 style="font-size: 20px; color: green; margin-top: 10px;">LUCRO LÍQUIDO: ${document.getElementById('dash-profit').innerText}</h3>
-                <br>
-                <p style="font-size: 16px; color: purple;">VOUCHERS (A Receber): ${document.getElementById('dash-vouchers').innerText}</p>
-                <br><br><br><br>
-                <p>______________________________________</p>
-                <p>Visto Gerência</p>
+            <div class="receipt-header">
+                <h2 class="receipt-title">FECHAMENTO CAIXA</h2>
+                <p class="receipt-info"><strong>DATA:</strong> ${currentDateFilter.split('-').reverse().join('/')}</p>
+            </div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-item"><span>ENTRADAS BRUTAS:</span><span>${document.getElementById('dash-revenue').innerText}</span></div>
+            <div class="receipt-item"><span>CUSTO (MERCADORIA):</span><span>${document.getElementById('dash-cost').innerText}</span></div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-total"><span>LUCRO LÍQUIDO:</span><span>${document.getElementById('dash-profit').innerText}</span></div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-item" style="margin-top: 15px;"><span>VOUCHERS PENDENTES:</span><span>${document.getElementById('dash-vouchers').innerText}</span></div>
+            <div class="receipt-footer" style="margin-top:40px;">
+                <p>___________________________________</p>
+                <p style="font-weight: bold; margin-top:5px;">VISTO GERÊNCIA</p>
             </div>
         `;
         
-        // Aguarda a injeção do HTML no navegador e dispara a impressão garantida
-        setTimeout(() => {
-            window.print();
-        }, 300);
+        setTimeout(() => { window.print(); }, 300);
     };
 }
 
 // ==========================================
-// PDV E CHECKOUT (Com Pagamento Complementar)
+// PDV E VISUAL DOS CARDS DE PRODUTO
 // ==========================================
 function buildCategoryTabs() {
     const categorias = ["Todos", "Combos", ...new Set(products.map(p => p.categoria))];
     const container = document.getElementById('category-tabs');
     if(!container) return;
-    container.innerHTML = categorias.map(c => `<button class="px-6 py-2 rounded-xl font-bold whitespace-nowrap bg-gray-100 cat-btn" data-cat="${c}">${c}</button>`).join('');
+    container.innerHTML = categorias.map(c => `<button class="px-6 py-2 rounded-xl font-bold uppercase text-sm whitespace-nowrap bg-gray-100 text-gray-500 shadow-sm transition cat-btn" data-cat="${c}">${c}</button>`).join('');
     document.querySelectorAll('.cat-btn').forEach(btn => {
         btn.onclick = () => {
-            document.querySelectorAll('.cat-btn').forEach(b => b.classList.replace('theme-bg', 'bg-gray-100'));
-            btn.classList.replace('bg-gray-100', 'theme-bg'); renderPdv(btn.dataset.cat);
+            document.querySelectorAll('.cat-btn').forEach(b => { b.classList.replace('theme-bg', 'bg-gray-100'); b.classList.replace('text-white', 'text-gray-500'); });
+            btn.classList.replace('bg-gray-100', 'theme-bg'); btn.classList.replace('text-gray-500', 'text-white'); renderPdv(btn.dataset.cat);
         };
     });
     renderPdv('Todos');
@@ -537,10 +535,12 @@ function renderPdv(filtro) {
     
     filtered.forEach(p => {
         const isCombo = p.isCombo;
-        const badge = isCombo ? `<span class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-[10px] font-black px-2 py-1 rounded-md shadow-sm">COMBO</span>` : '';
+        const badge = isCombo ? `<span class="absolute top-3 right-3 bg-yellow-400 text-yellow-900 text-[10px] font-black px-2 py-1 rounded-md shadow-md">COMBO</span>` : '';
         const div = document.createElement('div');
-        div.className = "bg-white p-4 rounded-[2rem] shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition active:scale-95 flex flex-col relative";
-        div.innerHTML = `${badge}<img src="${p.imagem}" class="w-full h-24 object-cover rounded-2xl mb-3"><p class="text-sm font-bold leading-tight mb-1 text-gray-800">${p.nome}</p><p class="theme-text font-black text-lg mt-auto">R$ ${p.preco.toFixed(2)}</p>`;
+        
+        // MUDANÇA VISUAL CRÍTICA: object-contain para exibir imagem inteira + altura h-36
+        div.className = "bg-white p-4 rounded-[2rem] shadow-sm border border-gray-100 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition flex flex-col relative group";
+        div.innerHTML = `${badge}<img src="${p.imagem}" class="w-full h-36 object-contain bg-gray-50 rounded-2xl mb-4 p-2 group-hover:scale-105 transition"><p class="text-sm font-black leading-tight mb-1 text-gray-800">${p.nome}</p><p class="theme-text font-black text-xl mt-auto">R$ ${p.preco.toFixed(2)}</p>`;
         div.onclick = () => addToCart(p); grid.appendChild(div);
     });
 }
@@ -555,11 +555,12 @@ function updateCart() {
     list.innerHTML = ''; cartTotal = 0;
     cart.forEach(item => {
         cartTotal += item.preco * item.qty;
-        list.innerHTML += `<div class="flex justify-between items-center bg-gray-50 p-3 rounded-2xl border"><div><p class="font-bold text-gray-800 text-sm">${item.qty}x ${item.nome}</p><p class="text-xs text-gray-500">R$ ${(item.preco * item.qty).toFixed(2)}</p></div><button onclick="window.removeCartItem('${item.id}')" class="text-red-400 hover:text-red-600 p-2"><i class="ph ph-x-circle text-xl"></i></button></div>`;
+        list.innerHTML += `<div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-2"><div class="flex-1"><p class="font-black text-gray-800 text-sm leading-tight">${item.qty}x ${item.nome}</p><p class="text-xs text-gray-500 font-bold mt-1">R$ ${(item.preco * item.qty).toFixed(2)}</p></div><button onclick="window.removeCartItem('${item.id}')" class="text-red-400 hover:text-red-600 bg-red-50 p-2 rounded-xl transition"><i class="ph ph-x-circle text-lg"></i></button></div>`;
     });
     if(document.getElementById('total')) document.getElementById('total').innerText = `R$ ${cartTotal.toFixed(2)}`;
 }
 
+// Finalizar Venda e Layout do Recibo Termico Moderno
 const btnCheckout = document.getElementById('btn-checkout');
 if(btnCheckout) {
     btnCheckout.onclick = async () => {
@@ -635,27 +636,36 @@ if(btnCheckout) {
             }
         }
 
+        // Layout HTML do Recibo Tecnológico (Aplica o CSS)
         let cupomItems = '';
-        cart.forEach(i => { cupomItems += `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>${i.qty}x ${i.nome}</span><span>${(i.preco * i.qty).toFixed(2)}</span></div>`; });
+        cart.forEach(i => { cupomItems += `<div class="receipt-item"><span>${i.qty}x ${i.nome}</span><span>R$ ${(i.preco * i.qty).toFixed(2)}</span></div>`; });
         
-        const logoHtml = appConfig.logo ? `<img src="${appConfig.logo}" style="max-width: 100px; margin: 0 auto 10px auto; display: block; border-radius: 8px;">` : '';
+        const logoHtml = appConfig.logo ? `<img src="${appConfig.logo}" class="receipt-logo">` : '';
 
         const printSec = document.getElementById('print-section');
         if(printSec) {
             printSec.innerHTML = `
-                <div style="text-align:center; margin-bottom: 10px; color: black; font-family: monospace;">
+                <div class="receipt-header">
                     ${logoHtml}
-                    <h2 style="margin:0; font-size:18px;">${appConfig.nome || 'Matsucafe'}</h2>
-                    <p style="margin:0; font-size:12px;">${appConfig.cnpj || ''}</p>
-                    <p style="margin:0; font-size:12px;">${appConfig.endereco || ''}</p>
-                    <hr style="border-top:1px dashed #000; margin:5px 0;">
-                    <p style="margin:0; font-size:12px;">Pedido #${nro}</p><p style="margin:0; font-size:12px;">Cliente: ${clienteNome}</p><p style="margin:0; font-size:12px;">Pgto: ${pagamento}</p>
+                    <h2 class="receipt-title">${appConfig.nome || 'Matsucafe'}</h2>
+                    <p class="receipt-info">CNPJ: ${appConfig.cnpj || 'Não informado'}</p>
+                    <p class="receipt-info">${appConfig.endereco || ''}</p>
+                    <p class="receipt-info">${appConfig.telefone || ''}</p>
                 </div>
-                <hr style="border-top:1px dashed #000; margin:10px 0;">
-                <div style="font-size:12px; font-family: monospace; color: black;">${cupomItems}</div>
-                <hr style="border-top:1px dashed #000; margin:10px 0;">
-                <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:bold; color: black; font-family: monospace;"><span>TOTAL</span><span>R$ ${cartTotal.toFixed(2)}</span></div>
-                <br><br>
+                <div class="receipt-divider"></div>
+                <div style="text-align: left;">
+                    <p class="receipt-info"><strong>Pedido:</strong> #${nro}</p>
+                    <p class="receipt-info"><strong>Data:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
+                    <p class="receipt-info"><strong>Cliente:</strong> ${clienteNome}</p>
+                    ${cpfNaNota ? `<p class="receipt-info"><strong>CPF:</strong> ${cpfNaNota}</p>` : ''}
+                    <p class="receipt-info"><strong>Pgto:</strong> ${pagamento}</p>
+                </div>
+                <div class="receipt-divider"></div>
+                <div>${cupomItems}</div>
+                <div class="receipt-divider"></div>
+                <div class="receipt-total"><span>TOTAL</span><span>R$ ${cartTotal.toFixed(2)}</span></div>
+                <div class="receipt-footer"><p>${appConfig.msg || 'Obrigado e volte sempre!'}</p></div>
+                <br>
             `;
             setTimeout(() => { window.print(); }, 300);
         }
@@ -665,7 +675,7 @@ if(btnCheckout) {
 }
 
 // ==========================================
-// FUNÇÕES GLOBAIS DE MODAL (Evita Erros)
+// FUNÇÕES GLOBAIS DE MODAL 
 // ==========================================
 window.closeModals = () => {
     document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden'));
@@ -680,7 +690,7 @@ window.openProductModal = (p = null) => {
     document.getElementById('prod-validade').value = '';
 
     if(p) {
-        document.getElementById('modal-title').innerText = "Editar Produto";
+        document.getElementById('modal-title').innerText = "Editar Produto Base";
         if(document.getElementById('modal-subtitle')) document.getElementById('modal-subtitle').classList.remove('hidden');
         document.getElementById('prod-nome').value = p.nome; document.getElementById('prod-categoria').value = p.categoria;
         document.getElementById('prod-venda').value = p.preco; document.getElementById('prod-custo').value = p.custo;
@@ -724,9 +734,9 @@ window.openComboModal = () => {
     lista.innerHTML = '';
     products.forEach(p => {
         lista.innerHTML += `
-            <label class="flex items-center gap-3 bg-white p-2 border rounded-xl cursor-pointer hover:bg-gray-100">
+            <label class="flex items-center gap-3 bg-white p-3 border rounded-xl cursor-pointer hover:bg-gray-100 transition shadow-sm">
                 <input type="checkbox" value="${p.id}" class="combo-prod-check w-5 h-5 accent-green-600">
-                <span class="font-bold text-sm text-gray-700">${p.nome} (Custo: R$ ${(p.custo || 0).toFixed(2)})</span>
+                <span class="font-bold text-sm text-gray-700">${p.nome} (Custo Peça: R$ ${(p.custo || 0).toFixed(2)})</span>
             </label>
         `;
     });
