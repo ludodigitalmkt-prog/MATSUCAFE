@@ -61,7 +61,7 @@ if(loginForm) {
 }
 
 // ==========================================
-// CONFIGURAÇÕES
+// CONFIGURAÇÕES (Com alteração da Logo do Menu)
 // ==========================================
 function loadSettings() {
     onSnapshot(doc(db, "config", "loja"), (docSnap) => {
@@ -73,6 +73,11 @@ function loadSettings() {
             if(document.getElementById('cfg-telefone')) document.getElementById('cfg-telefone').value = appConfig.telefone || '';
             if(document.getElementById('cfg-msg')) document.getElementById('cfg-msg').value = appConfig.msg || '';
             if(document.getElementById('cfg-logo')) document.getElementById('cfg-logo').value = appConfig.logo || '';
+            
+            // Atualiza a logo no menu lateral
+            if(document.getElementById('sidebar-logo')) {
+                document.getElementById('sidebar-logo').src = appConfig.logo || 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=100&q=80';
+            }
         }
     });
 }
@@ -344,7 +349,7 @@ if(btnSaveCombo) {
 }
 
 // ==========================================
-// QUEBRAS
+// QUEBRAS (Reaproveitando a Baixa de Lotes)
 // ==========================================
 async function loadQuebras() {
     onSnapshot(collection(db, "quebras"), (snapshot) => {
@@ -378,26 +383,7 @@ if(btnAddQuebra) {
             valorPerda: p.custo * qty, data: serverTimestamp(), dataSimples: new Date().toISOString().split('T')[0] 
         });
 
-        let lotesAtuais = p.lotes || [];
-        let qtdRestantePraBaixar = qty;
-        
-        lotesAtuais.sort((a, b) => new Date(a.validade) - new Date(b.validade));
-        
-        for (let lote of lotesAtuais) {
-            if (qtdRestantePraBaixar <= 0) break;
-            if (lote.quantidade > 0) {
-                if (lote.quantidade >= qtdRestantePraBaixar) {
-                    lote.quantidade -= qtdRestantePraBaixar;
-                    qtdRestantePraBaixar = 0;
-                } else {
-                    qtdRestantePraBaixar -= lote.quantidade;
-                    lote.quantidade = 0;
-                }
-            }
-        }
-        
-        const novoEstoqueTotal = lotesAtuais.reduce((acc, l) => acc + l.quantidade, 0);
-        await updateDoc(doc(db, "produtos", pId), { lotes: lotesAtuais, estoque_total: novoEstoqueTotal });
+        await baixarEstoqueFIFO(p.id, qty);
         
         document.getElementById('quebra-qty').value = ''; document.getElementById('quebra-motivo').value = '';
         alert("Quebra registrada e estoque deduzido!");
@@ -405,7 +391,36 @@ if(btnAddQuebra) {
 }
 
 // ==========================================
-// FINANCEIRO AVANÇADO 
+// FUNÇÃO CENTRAL DE BAIXA DE ESTOQUE (FIFO)
+// ==========================================
+async function baixarEstoqueFIFO(produtoId, quantidadeParaBaixar) {
+    const p = products.find(prod => prod.id === produtoId);
+    if(!p) return;
+
+    let lotesAtuais = p.lotes || [];
+    let qtdRestante = quantidadeParaBaixar;
+    
+    // Organiza para tirar do lote que vence primeiro
+    lotesAtuais.sort((a, b) => new Date(a.validade) - new Date(b.validade));
+    
+    for (let lote of lotesAtuais) {
+        if (qtdRestante <= 0) break;
+        if (lote.quantidade > 0) {
+            if (lote.quantidade >= qtdRestante) {
+                lote.quantidade -= qtdRestante;
+                qtdRestante = 0;
+            } else {
+                qtdRestante -= lote.quantidade;
+                lote.quantidade = 0;
+            }
+        }
+    }
+    const novoEstoqueTotal = lotesAtuais.reduce((acc, l) => acc + l.quantidade, 0);
+    await updateDoc(doc(db, "produtos", p.id), { lotes: lotesAtuais, estoque_total: novoEstoqueTotal });
+}
+
+// ==========================================
+// FINANCEIRO AVANÇADO (INJETANDO VOUCHER PAGO)
 // ==========================================
 const filtroData = document.getElementById('filtro-data');
 if(filtroData) {
@@ -433,11 +448,11 @@ function initDashboard() {
                         const div = document.createElement('div');
                         div.className = "bg-white p-5 rounded-[1.5rem] border border-gray-100 flex justify-between items-center shadow-sm hover:shadow-md transition";
                         div.innerHTML = `
-                            <div class="flex-1"><p class="font-black text-gray-800 text-lg">Pedido #${v.nroPedido}</p><p class="text-xs text-gray-500 font-bold mt-1">${v.cliente} | Pgto: ${v.pagamento}</p></div>
+                            <div class="flex-1"><p class="font-black text-gray-800 text-lg">${v.isVoucherPgto ? 'Entrada Voucher' : `Pedido #${v.nroPedido}`}</p><p class="text-xs text-gray-500 font-bold mt-1">${v.cliente} | Pgto: ${v.pagamento}</p></div>
                             <div class="text-right mr-5"><p class="font-black text-green-600 text-xl">R$ ${v.total.toFixed(2)}</p></div>
                             <button class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-delete"><i class="ph ph-trash text-lg"></i></button>
                         `;
-                        div.querySelector('.btn-delete').onclick = async () => { if(confirm('Atenção: Excluir esta Venda? O valor sumirá do financeiro.')) await deleteDoc(doc(db, "vendas", docSnap.id)); };
+                        div.querySelector('.btn-delete').onclick = async () => { if(confirm('Atenção: Excluir esta transação? O valor sumirá do financeiro.')) await deleteDoc(doc(db, "vendas", docSnap.id)); };
                         history.appendChild(div);
                     }
                 }
@@ -456,14 +471,35 @@ function initDashboard() {
                             <button class="bg-green-500 hover:bg-green-600 transition text-white font-black text-sm px-4 py-3 rounded-xl shadow-md btn-receber"><i class="ph ph-check-circle"></i> Receber</button>
                         `;
                         div.querySelector('.btn-receber').onclick = async () => {
-                            if(confirm(`Confirmar recebimento financeiro de R$ ${pend.valor.toFixed(2)} referente ao colaborador ${pend.colaborador}?`)) {
+                            if(confirm(`Confirmar recebimento financeiro de R$ ${pend.valor.toFixed(2)} referente a ${pend.colaborador}? O valor será injetado no caixa de hoje.`)) {
+                                
+                                // 1. Marca o voucher como pago
                                 await updateDoc(doc(db, "vouchers_pendentes", docSnap.id), { status: 'pago', dataPagamento: new Date().toISOString() });
+                                
+                                // 2. Devolve para o colaborador APENAS o valor que era do limite dele (Ignorando valores que foram para pendura)
                                 const c = clients.find(cli => cli.nome === pend.colaborador);
                                 if(c) {
-                                    const novoSaldo = (parseFloat(c.saldo_voucher || 0) + pend.valor);
+                                    const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(pend.valorRestaurar || pend.valor);
                                     await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
                                 }
-                                alert('Baixa financeira realizada! Limite restaurado no benefício dele.');
+
+                                // 3. INJETA O DINHEIRO NO CAIXA DO DIA ATUAL
+                                const nroPagamento = Math.floor(1000 + Math.random() * 9000);
+                                await addDoc(collection(db, "vendas"), {
+                                    nroPedido: `PGTO-${nroPagamento}`, 
+                                    total: pend.valor, 
+                                    custoTotal: 0, // O custo já foi debitado no dia da venda do produto
+                                    cliente: pend.colaborador, 
+                                    pagamento: 'Recebimento Voucher', 
+                                    cpf: '',
+                                    complemento: 0,
+                                    isVoucherPgto: true,
+                                    data: serverTimestamp(), 
+                                    dataSimples: new Date().toISOString().split('T')[0], // Puxa pro dia que deu baixa
+                                    itens: [{nome: `Pgto Voucher (Ref. #${pend.nroPedido})`, qty: 1, preco: pend.valor}]
+                                });
+
+                                alert('Baixa realizada! O valor entrou no caixa e o limite dele foi restaurado.');
                             }
                         };
                         vouchersList.appendChild(div);
@@ -479,37 +515,8 @@ function initDashboard() {
     });
 }
 
-// Relatório Moderno (Aplica as Novas Classes CSS)
-const btnPrintDay = document.getElementById('btn-print-day');
-if(btnPrintDay) {
-    btnPrintDay.onclick = () => {
-        const printSec = document.getElementById('print-section');
-        if(!printSec) return alert("Erro: Container de impressão não encontrado.");
-        
-        printSec.innerHTML = `
-            <div class="receipt-header">
-                <h2 class="receipt-title">FECHAMENTO CAIXA</h2>
-                <p class="receipt-info"><strong>DATA:</strong> ${currentDateFilter.split('-').reverse().join('/')}</p>
-            </div>
-            <div class="receipt-divider"></div>
-            <div class="receipt-item"><span>ENTRADAS BRUTAS:</span><span>${document.getElementById('dash-revenue').innerText}</span></div>
-            <div class="receipt-item"><span>CUSTO (MERCADORIA):</span><span>${document.getElementById('dash-cost').innerText}</span></div>
-            <div class="receipt-divider"></div>
-            <div class="receipt-total"><span>LUCRO LÍQUIDO:</span><span>${document.getElementById('dash-profit').innerText}</span></div>
-            <div class="receipt-divider"></div>
-            <div class="receipt-item" style="margin-top: 15px;"><span>VOUCHERS PENDENTES:</span><span>${document.getElementById('dash-vouchers').innerText}</span></div>
-            <div class="receipt-footer" style="margin-top:40px;">
-                <p>___________________________________</p>
-                <p style="font-weight: bold; margin-top:5px;">VISTO GERÊNCIA</p>
-            </div>
-        `;
-        
-        setTimeout(() => { window.print(); }, 300);
-    };
-}
-
 // ==========================================
-// PDV E VISUAL DOS CARDS DE PRODUTO
+// PDV - EXIBINDO ESTOQUE E BLOQUEANDO ZERADOS
 // ==========================================
 function buildCategoryTabs() {
     const categorias = ["Todos", "Combos", ...new Set(products.map(p => p.categoria))];
@@ -535,17 +542,50 @@ function renderPdv(filtro) {
     
     filtered.forEach(p => {
         const isCombo = p.isCombo;
+        let estoqueDisplay = '';
+        let opacityClass = '';
+        let bloqueado = false;
+
+        // Lógica Visual do Card Fosco e Esgotado
+        if(!isCombo) {
+            const totalEstoque = (p.lotes || []).reduce((acc, l) => acc + l.quantidade, 0);
+            if (totalEstoque <= 0) {
+                estoqueDisplay = `<span class="text-[10px] font-black text-red-600 bg-red-100 px-2 py-1 rounded-md uppercase mt-1 inline-block border border-red-200 shadow-sm">ESGOTADO</span>`;
+                opacityClass = 'opacity-40 grayscale pointer-events-none';
+                bloqueado = true;
+            } else {
+                estoqueDisplay = `<span class="text-[10px] font-bold text-gray-500 mt-1 inline-block">${totalEstoque} un. disponíveis</span>`;
+            }
+        }
+
         const badge = isCombo ? `<span class="absolute top-3 right-3 bg-yellow-400 text-yellow-900 text-[10px] font-black px-2 py-1 rounded-md shadow-md">COMBO</span>` : '';
         const div = document.createElement('div');
         
-        // MUDANÇA VISUAL CRÍTICA: object-contain para exibir imagem inteira + altura h-36
-        div.className = "bg-white p-4 rounded-[2rem] shadow-sm border border-gray-100 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition flex flex-col relative group";
-        div.innerHTML = `${badge}<img src="${p.imagem}" class="w-full h-36 object-contain bg-gray-50 rounded-2xl mb-4 p-2 group-hover:scale-105 transition"><p class="text-sm font-black leading-tight mb-1 text-gray-800">${p.nome}</p><p class="theme-text font-black text-xl mt-auto">R$ ${p.preco.toFixed(2)}</p>`;
-        div.onclick = () => addToCart(p); grid.appendChild(div);
+        div.className = `bg-white p-4 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col relative group transition ${opacityClass} ${bloqueado ? '' : 'cursor-pointer hover:shadow-lg hover:-translate-y-1'}`;
+        div.innerHTML = `${badge}<img src="${p.imagem}" class="w-full h-36 object-contain bg-gray-50 rounded-2xl mb-4 p-2 transition ${bloqueado ? '' : 'group-hover:scale-105'}">
+                         <p class="text-sm font-black leading-tight mb-1 text-gray-800">${p.nome}</p>
+                         ${estoqueDisplay}
+                         <p class="theme-text font-black text-xl mt-auto pt-3">R$ ${p.preco.toFixed(2)}</p>`;
+        
+        if(!bloqueado) {
+            div.onclick = () => addToCart(p); 
+        }
+        grid.appendChild(div);
     });
 }
 
-function addToCart(p) { const item = cart.find(i => i.id === p.id); if(item) item.qty++; else cart.push({...p, qty: 1}); updateCart(); }
+function addToCart(p) { 
+    if(!p.isCombo) {
+        const totalEstoque = (p.lotes || []).reduce((acc, l) => acc + l.quantidade, 0);
+        const currentInCart = cart.find(i => i.id === p.id)?.qty || 0;
+        if (currentInCart + 1 > totalEstoque) return alert('Você não tem mais estoque suficiente deste produto para adicionar ao carrinho!');
+    }
+    
+    const item = cart.find(i => i.id === p.id); 
+    if(item) item.qty++; else cart.push({...p, qty: 1}); 
+    updateCart(); 
+}
+
 window.removeCartItem = (id) => { cart = cart.filter(item => item.id !== id); updateCart(); }
 if(document.getElementById('btn-clear')) document.getElementById('btn-clear').onclick = () => { cart = []; updateCart(); };
 
@@ -560,7 +600,9 @@ function updateCart() {
     if(document.getElementById('total')) document.getElementById('total').innerText = `R$ ${cartTotal.toFixed(2)}`;
 }
 
-// Finalizar Venda e Layout do Recibo Termico Moderno
+// ==========================================
+// CHECKOUT COM VOUCHER MELHORADO
+// ==========================================
 const btnCheckout = document.getElementById('btn-checkout');
 if(btnCheckout) {
     btnCheckout.onclick = async () => {
@@ -580,31 +622,45 @@ if(btnCheckout) {
             if (!c || c.tipo !== 'Colaborador') return alert("Selecione um Colaborador válido para usar o Voucher!");
             
             let saldoDisponivel = parseFloat(c.saldo_voucher !== undefined ? c.saldo_voucher : c.voucher || 0);
+            let valorDaDiferencaPendura = 0;
+            let valorVoucherUsado = 0;
             
             if (cartTotal > saldoDisponivel) {
                 const diferenca = cartTotal - saldoDisponivel;
                 
-                let resposta = prompt(`O saldo de benefício (R$ ${saldoDisponivel.toFixed(2)}) não é suficiente.\nFalta R$ ${diferenca.toFixed(2)}.\n\nDigite a forma de pagamento desta diferença (Ex: PIX, Dinheiro, Cartao) ou digite 'Pendura' para lançar no financeiro a receber:`);
+                let resposta = prompt(`O saldo de benefício (R$ ${saldoDisponivel.toFixed(2)}) não é suficiente.\nFalta R$ ${diferenca.toFixed(2)}.\n\nDigite a forma de pagamento (PIX, Dinheiro, Cartao) ou digite 'Pendura' para lançar a diferença no fechamento do mês:`);
                 
-                if (resposta === null || resposta.trim() === '') {
-                    return alert('Venda cancelada! Forma de pagamento não informada.');
-                }
+                if (resposta === null || resposta.trim() === '') return alert('Venda cancelada! Forma de pagamento não informada.');
 
                 formaPagamentoComplementar = resposta.trim();
                 pagamento = `Voucher + ${formaPagamentoComplementar}`;
-                
+                valorVoucherUsado = saldoDisponivel; 
+
                 if (formaPagamentoComplementar.toLowerCase() === 'pendura') {
-                    await addDoc(collection(db, "vouchers_pendentes"), {
-                        colaborador: clienteNome, colaboradorId: c.id, valor: diferenca,
-                        status: 'pendente', nroPedido: nro, dataStr: dataAtualStr, timestamp: serverTimestamp()
-                    });
+                    valorDaDiferencaPendura = diferenca;
                 } else {
                     valorPagoNaDiferenca = diferenca;
                 }
                 await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: 0 });
 
             } else {
+                valorVoucherUsado = cartTotal;
                 await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: saldoDisponivel - cartTotal });
+            }
+
+            // MÁGICA: Registra TODO o voucher usado nas contas a receber (para cobrar do financeiro depois)
+            const totalParaOFinanceiroCobrar = valorVoucherUsado + valorDaDiferencaPendura;
+            if (totalParaOFinanceiroCobrar > 0) {
+                await addDoc(collection(db, "vouchers_pendentes"), {
+                    colaborador: clienteNome, 
+                    colaboradorId: c.id, 
+                    valor: totalParaOFinanceiroCobrar, 
+                    valorRestaurar: valorVoucherUsado, // Restaura só o que era limite dele
+                    status: 'pendente', 
+                    nroPedido: nro, 
+                    dataStr: dataAtualStr, 
+                    timestamp: serverTimestamp()
+                });
             }
         }
 
@@ -620,26 +676,23 @@ if(btnCheckout) {
         await addDoc(collection(db, "vendas"), {
             nroPedido: nro, total: cartTotal, custoTotal: custoDaVenda, 
             cliente: clienteNome, pagamento: pagamento, cpf: cpfNaNota,
-            complemento: valorPagoNaDiferenca,
+            complemento: valorPagoNaDiferenca, isVoucherPgto: false,
             data: serverTimestamp(), dataSimples: dataAtualStr, itens: cart.map(i => ({ nome: i.nome, qtd: i.qty, preco: i.preco }))
         });
 
+        // MÁGICA: Baixa de Estoque Real no Lote
         for(const item of cart) {
             if (item.isCombo) {
                 for(const sub of item.itens) {
-                    const p = products.find(prod => prod.id === sub.id);
-                    if(p) await updateDoc(doc(db, "produtos", p.id), { estoque_total: (p.estoque_total || p.estoque) - item.qty });
+                    await baixarEstoqueFIFO(sub.id, item.qty);
                 }
             } else {
-                const p = products.find(prod => prod.id === item.id);
-                if(p) await updateDoc(doc(db, "produtos", p.id), { estoque_total: (p.estoque_total || p.estoque) - item.qty });
+                await baixarEstoqueFIFO(item.id, item.qty);
             }
         }
 
-        // Layout HTML do Recibo Tecnológico (Aplica o CSS)
         let cupomItems = '';
         cart.forEach(i => { cupomItems += `<div class="receipt-item"><span>${i.qty}x ${i.nome}</span><span>R$ ${(i.preco * i.qty).toFixed(2)}</span></div>`; });
-        
         const logoHtml = appConfig.logo ? `<img src="${appConfig.logo}" class="receipt-logo">` : '';
 
         const printSec = document.getElementById('print-section');
@@ -669,13 +722,40 @@ if(btnCheckout) {
             `;
             setTimeout(() => { window.print(); }, 300);
         }
-        
         cart = []; updateCart(); document.getElementById('pdv-cpf').value = '';
     };
 }
 
+// Impressão do Relatório Financeiro
+const btnPrintDay = document.getElementById('btn-print-day');
+if(btnPrintDay) {
+    btnPrintDay.onclick = () => {
+        const printSec = document.getElementById('print-section');
+        if(!printSec) return alert("Erro: Container de impressão não encontrado.");
+        
+        printSec.innerHTML = `
+            <div class="receipt-header">
+                <h2 class="receipt-title">FECHAMENTO CAIXA</h2>
+                <p class="receipt-info"><strong>DATA:</strong> ${currentDateFilter.split('-').reverse().join('/')}</p>
+            </div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-item"><span>ENTRADAS BRUTAS:</span><span>${document.getElementById('dash-revenue').innerText}</span></div>
+            <div class="receipt-item"><span>CUSTO (MERCADORIA):</span><span>${document.getElementById('dash-cost').innerText}</span></div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-total"><span>LUCRO LÍQUIDO:</span><span>${document.getElementById('dash-profit').innerText}</span></div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-item" style="margin-top: 15px;"><span>VOUCHERS PENDENTES:</span><span>${document.getElementById('dash-vouchers').innerText}</span></div>
+            <div class="receipt-footer" style="margin-top:40px;">
+                <p>___________________________________</p>
+                <p style="font-weight: bold; margin-top:5px;">VISTO GERÊNCIA</p>
+            </div>
+        `;
+        setTimeout(() => { window.print(); }, 300);
+    };
+}
+
 // ==========================================
-// FUNÇÕES GLOBAIS DE MODAL 
+// FUNÇÕES GLOBAIS DE MODAL E UI
 // ==========================================
 window.closeModals = () => {
     document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden'));
