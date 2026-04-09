@@ -173,37 +173,52 @@
 
     </div>
 
-    <div id="modal-produto" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[2.5rem] w-full max-w-2xl p-8 shadow-2xl">
-            <div class="flex justify-between items-center mb-6"><h3 id="modal-title" class="text-2xl font-black">Produto</h3><button onclick="closeModals()" class="text-3xl">&times;</button></div>
+    <div id="modal-produto" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-2xl p-8 shadow-2xl my-auto">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 id="modal-title" class="text-2xl font-black">Produto</h3>
+                    <p id="modal-subtitle" class="text-sm text-gray-500 font-bold hidden">Adicionando novo lote a um produto existente</p>
+                </div>
+                <button onclick="closeModals()" class="text-3xl">&times;</button>
+            </div>
+            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <input type="hidden" id="edit-id">
-                <div class="md:col-span-2"><input type="text" id="prod-nome" placeholder="Nome" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
+                <div class="md:col-span-2"><input type="text" id="prod-nome" placeholder="Nome do Produto" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none font-bold"></div>
                 <div><input type="text" id="prod-categoria" placeholder="Categoria" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
-                <div><input type="number" step="0.01" id="prod-venda" placeholder="Preço Venda" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
-                <div><input type="number" step="0.01" id="prod-custo" placeholder="Custo Unitário" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
-                <div><input type="number" id="prod-estoque" placeholder="Estoque Inicial" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
-                <div><label class="text-xs font-bold text-gray-400">Vencimento</label><input type="date" id="prod-validade" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none text-red-500 font-bold"></div>
-                <div class="md:col-span-2"><input type="text" id="prod-imagem" placeholder="Link da Imagem" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
+                <div><input type="text" id="prod-imagem" placeholder="Link da Imagem" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
+                <div><input type="number" step="0.01" id="prod-venda" placeholder="Preço Venda (R$)" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
+                <div><input type="number" step="0.01" id="prod-custo" placeholder="Custo Unitário (R$)" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
             </div>
-            <button id="btn-save-product" class="w-full theme-bg text-white py-4 rounded-2xl font-black">Salvar</button>
-        </div>
-    </div>
 
-    <div id="modal-cliente" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl">
-            <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Cadastro</h3><button onclick="closeModals()" class="text-3xl">&times;</button></div>
-            <input type="hidden" id="cli-id">
-            <select id="cli-tipo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 font-bold outline-none" onchange="toggleVoucher()">
-                <option value="Cliente">Cliente</option>
-                <option value="Colaborador">Colaborador</option>
-            </select>
-            <input type="text" id="cli-nome" placeholder="Nome Completo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none">
-            <input type="text" id="cli-telefone" placeholder="Telefone/WhatsApp" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none">
-            <div id="cli-voucher-container" class="hidden mb-6">
-                <input type="number" step="0.01" id="cli-voucher" placeholder="Limite Voucher Mês (R$)" class="w-full p-4 bg-purple-50 border border-purple-200 rounded-2xl outline-none font-bold text-purple-700">
+            <hr class="border-t-2 border-dashed border-gray-200 mb-6">
+            <h4 class="font-black text-gray-800 mb-4 flex items-center gap-2"><i class="ph ph-package"></i> Dados da Entrada (Lote)</h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-2xl border">
+                <div>
+                    <label class="text-xs font-bold text-gray-400 ml-2">Tipo de Entrada</label>
+                    <select id="prod-tipo-lote" class="w-full p-4 bg-white border rounded-2xl outline-none font-bold">
+                        <option value="unidade">Unidades Soltas</option>
+                        <option value="pack">Pack / Fardo</option>
+                        <option value="lote">Lote Fechado</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 ml-2">Qtd. nesta entrada</label>
+                    <input type="number" id="prod-estoque-lote" placeholder="Ex: 50" class="w-full p-4 bg-white border rounded-2xl outline-none font-bold text-blue-600">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 ml-2">Data de Entrada</label>
+                    <input type="date" id="prod-entrada" class="w-full p-4 bg-white border rounded-2xl outline-none font-bold">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 ml-2">Vencimento Deste Lote</label>
+                    <input type="date" id="prod-validade" class="w-full p-4 bg-white border border-red-200 rounded-2xl outline-none text-red-500 font-bold shadow-sm">
+                </div>
             </div>
-            <button id="btn-save-client" class="w-full theme-bg text-white py-4 rounded-2xl font-black shadow-xl">Salvar</button>
+
+            <button id="btn-save-product" class="w-full theme-bg text-white py-4 rounded-2xl font-black shadow-xl hover:opacity-90 transition">Salvar Produto / Lote</button>
         </div>
     </div>
 
