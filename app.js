@@ -80,8 +80,6 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
     btn.innerText = "Salvando...";
 
     const logoUrlRaw = document.getElementById('logo-url-input').value;
-    
-    // Lógica corrigida para converter link do Google Drive em link direto de imagem
     let finalLogoUrl = logoUrlRaw;
     if (logoUrlRaw.includes('drive.google.com')) {
         const fileId = logoUrlRaw.split('/d/')[1]?.split('/')[0] || logoUrlRaw.split('id=')[1];
@@ -98,7 +96,7 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
         showCpf: document.getElementById('cfg-show-cpf').checked,
         showTel: document.getElementById('cfg-show-tel').checked,
         showHora: document.getElementById('cfg-show-hora').checked,
-        logoUrl: finalLogoUrl // Salva o link direto
+        logoUrl: finalLogoUrl
     };
 
     await setDoc(doc(db, "configuracoes", "loja"), dados, { merge: true });
@@ -161,7 +159,6 @@ function loadCRM() {
             const c = { id: docSnap.id, ...docSnap.data() }; 
             clients.push(c);
             
-            // Adiciona a info do limite de voucher no nome caso seja colaborador
             let nomeNoSelect = c.tipo === 'Colaborador' ? `${c.nome} (Saldo: R$ ${(c.saldo || 0).toFixed(2)})` : `${c.nome} (${c.tipo})`;
             select.innerHTML += `<option value="${c.id}">${nomeNoSelect}</option>`;
             
@@ -229,40 +226,140 @@ document.getElementById('btn-add-crm').addEventListener('click', async () => {
 });
 
 // ==========================================
-// 4. PRODUTOS E ESTOQUE
+// 4. PRODUTOS, ESTOQUE E CATEGORIAS (FASE 1)
 // ==========================================
 async function loadProducts() {
     onSnapshot(collection(db, "produtos"), (snapshot) => {
         products = [];
-        const grid = document.getElementById('product-grid'); grid.innerHTML = '';
         const list = document.getElementById('admin-product-list'); list.innerHTML = '';
         
         snapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            const p = { id: docSnap.id, nome: data.nome || 'Sem Nome', preco: Number(data.preco) || 0, custo: Number(data.custo) || 0, estoque: Number(data.estoque) || 0, unidade: data.unidade || 'un', barcode: data.barcode || '', imagem: data.imagem || 'https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=300&q=80' };
+            // Lendo a categoria (se for antigo sem categoria, vira 'Geral')
+            const p = { 
+                id: docSnap.id, 
+                nome: data.nome || 'Sem Nome', 
+                preco: Number(data.preco) || 0, 
+                custo: Number(data.custo) || 0, 
+                estoque: Number(data.estoque) || 0, 
+                unidade: data.unidade || 'un', 
+                barcode: data.barcode || '', 
+                categoria: data.categoria || 'Geral', // NOVO CAMPO
+                imagem: data.imagem || 'https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=300&q=80' 
+            };
             products.push(p);
 
-            const div = document.createElement('div');
-            div.className = 'bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition transform duration-200 flex flex-col';
-            div.innerHTML = `<img src="${p.imagem}" class="w-full h-32 object-cover bg-gray-100"><div class="p-4 flex-1 flex flex-col justify-between"><h3 class="text-sm font-bold text-gray-800 leading-tight mb-2">${p.nome}</h3><div class="flex justify-between items-end"><p class="theme-text font-black text-lg">R$ ${p.preco.toFixed(2).replace('.', ',')}</p><span class="text-xs text-gray-400 bg-gray-100 px-2 rounded-md">Qtd: ${p.estoque}</span></div></div>`;
-            div.addEventListener('click', () => addToCart(p)); 
-            grid.appendChild(div);
-
+            // Renderiza na aba do admin
             const divAdmin = document.createElement('div');
             divAdmin.className = 'flex justify-between items-center bg-white p-5 rounded-2xl border border-gray-100 shadow-sm';
-            divAdmin.innerHTML = `<div><p class="font-black text-gray-800 text-lg">${p.nome} <span class="text-xs text-gray-400 font-normal">(${p.barcode || 'Sem Barcode'})</span></p><p class="text-gray-500 font-bold">Venda: R$ ${p.preco.toFixed(2)} | Custo: R$ ${p.custo.toFixed(2)} | Est: ${p.estoque}${p.unidade}</p></div><button class="bg-red-50 text-red-500 px-5 py-3 rounded-xl font-bold hover:bg-red-100 transition btn-delete">Excluir</button>`;
+            divAdmin.innerHTML = `
+                <div>
+                    <p class="font-black text-gray-800 text-lg">${p.nome} <span class="text-xs text-white bg-gray-800 px-2 py-1 rounded-md ml-2 font-normal">${p.categoria}</span></p>
+                    <p class="text-gray-500 font-bold">Venda: R$ ${p.preco.toFixed(2)} | Custo: R$ ${p.custo.toFixed(2)} | Est: ${p.estoque}${p.unidade}</p>
+                </div>
+                <button class="bg-red-50 text-red-500 px-5 py-3 rounded-xl font-bold hover:bg-red-100 transition btn-delete">Excluir</button>`;
             divAdmin.querySelector('.btn-delete').addEventListener('click', async () => { if(confirm('Apagar produto?')) await deleteDoc(doc(db, "produtos", p.id)); });
             list.appendChild(divAdmin);
         });
+
+        // Constrói as abas do PDV dinamicamente
+        buildCategoryTabs();
     });
 }
 
+function buildCategoryTabs() {
+    // Pega todas as categorias únicas que existem nos produtos
+    const categoriasInDB = [...new Set(products.map(p => p.categoria))];
+    
+    // Atualiza o autocomplete no formulário de cadastro
+    const datalist = document.getElementById('categorias-list');
+    if(datalist) {
+        datalist.innerHTML = categoriasInDB.map(c => `<option value="${c}">`).join('');
+    }
+
+    const tabsContainer = document.getElementById('category-tabs');
+    tabsContainer.innerHTML = `<button class="category-tab active theme-bg text-white px-6 py-2 rounded-xl font-bold whitespace-nowrap transition shadow-md" data-cat="Todos">Todos</button>`;
+    
+    categoriasInDB.forEach(cat => {
+        tabsContainer.innerHTML += `<button class="category-tab bg-gray-100 text-gray-600 hover:bg-gray-200 px-6 py-2 rounded-xl font-bold whitespace-nowrap transition" data-cat="${cat}">${cat}</button>`;
+    });
+
+    // Adiciona o evento de clique nas abas
+    document.querySelectorAll('.category-tab').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // Remove visual ativo de todas
+            document.querySelectorAll('.category-tab').forEach(b => {
+                b.classList.remove('theme-bg', 'text-white', 'shadow-md');
+                b.classList.add('bg-gray-100', 'text-gray-600');
+            });
+            // Coloca visual ativo na clicada
+            e.target.classList.remove('bg-gray-100', 'text-gray-600');
+            e.target.classList.add('theme-bg', 'text-white', 'shadow-md');
+            
+            // Renderiza apenas os produtos dessa categoria
+            renderPdvGrid(e.target.dataset.cat);
+        });
+    });
+
+    // Inicia mostrando todos
+    renderPdvGrid('Todos');
+}
+
+function renderPdvGrid(categoriaFiltro) {
+    const grid = document.getElementById('product-grid'); 
+    grid.innerHTML = '';
+    
+    // Filtra se não for "Todos"
+    const filtrados = categoriaFiltro === 'Todos' ? products : products.filter(p => p.categoria === categoriaFiltro);
+
+    filtrados.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition transform duration-200 flex flex-col relative';
+        
+        // Tag da Categoria no topo da imagem
+        const catBadge = `<span class="absolute top-2 left-2 theme-bg text-white text-[10px] font-black px-2 py-1 rounded-md shadow-sm z-10">${p.categoria}</span>`;
+
+        div.innerHTML = `
+            ${catBadge}
+            <img src="${p.imagem}" class="w-full h-32 object-cover bg-gray-100 relative">
+            <div class="p-4 flex-1 flex flex-col justify-between">
+                <h3 class="text-sm font-bold text-gray-800 leading-tight mb-2">${p.nome}</h3>
+                <div class="flex justify-between items-end">
+                    <p class="theme-text font-black text-lg">R$ ${p.preco.toFixed(2).replace('.', ',')}</p>
+                    <span class="text-xs text-gray-400 bg-gray-100 px-2 rounded-md font-bold">Est: ${p.estoque}</span>
+                </div>
+            </div>`;
+        
+        div.addEventListener('click', () => addToCart(p)); 
+        grid.appendChild(div);
+    });
+}
+
+// Botão de Adicionar Produto atualizado com o campo categoria
 document.getElementById('btn-add-product').addEventListener('click', async () => {
-    const nome = document.getElementById('prod-nome').value; const preco = parseFloat(document.getElementById('prod-venda').value);
+    const nome = document.getElementById('prod-nome').value; 
+    const preco = parseFloat(document.getElementById('prod-venda').value);
+    
     if(!nome || isNaN(preco)) return alert("Nome e Preço obrigatórios!");
-    await addDoc(collection(db, "produtos"), { barcode: document.getElementById('prod-barcode').value, nome: nome, unidade: document.getElementById('prod-unidade').value, estoque: parseInt(document.getElementById('prod-estoque').value) || 0, custo: parseFloat(document.getElementById('prod-custo').value) || 0, preco: preco, validade: document.getElementById('prod-validade').value, imagem: document.getElementById('prod-imagem').value });
-    ['prod-barcode','prod-nome','prod-unidade','prod-estoque','prod-custo','prod-venda','prod-validade','prod-imagem'].forEach(id => document.getElementById(id).value = '');
+    
+    // Pega a categoria digitada. Se tiver vazia, vira 'Geral'
+    const catFinal = document.getElementById('prod-categoria').value.trim() || 'Geral';
+
+    await addDoc(collection(db, "produtos"), { 
+        barcode: document.getElementById('prod-barcode').value, 
+        nome: nome, 
+        categoria: catFinal, // SALVANDO CATEGORIA NO BANCO
+        unidade: document.getElementById('prod-unidade').value, 
+        estoque: parseInt(document.getElementById('prod-estoque').value) || 0, 
+        custo: parseFloat(document.getElementById('prod-custo').value) || 0, 
+        preco: preco, 
+        validade: document.getElementById('prod-validade').value, 
+        imagem: document.getElementById('prod-imagem').value 
+    });
+    
+    ['prod-barcode','prod-nome','prod-categoria','prod-unidade','prod-estoque','prod-custo','prod-venda','prod-validade','prod-imagem'].forEach(id => document.getElementById(id).value = '');
 });
+
 
 // ==========================================
 // 5. CAIXA (CARRINHO E RECIBO INTELIGENTE)
@@ -302,7 +399,6 @@ function updateCartUI() {
     
     let aPagar = cartTotal;
     
-    // Matemática do Voucher Automático
     if (clientePdvSelecionado && clientePdvSelecionado.tipo === 'Colaborador' && clientePdvSelecionado.saldo > 0) {
         let voucherUsado = Math.min(cartTotal, clientePdvSelecionado.saldo);
         aPagar = cartTotal - voucherUsado;
@@ -332,38 +428,28 @@ document.getElementById('btn-checkout').addEventListener('click', async () => {
     let valorCobrado = cartTotal;
     let formaPgtoRecibo = pagamentoSelecionado;
 
-    // Lógica se for Colaborador com Voucher
     if (clienteData.tipo === 'Colaborador' && clienteData.saldo > 0) {
         voucherUsado = Math.min(cartTotal, clienteData.saldo);
         valorCobrado = cartTotal - voucherUsado;
 
         if (valorCobrado > 0 && pagamentoSelecionado === 'Voucher') {
-            return alert("O limite do colaborador não cobre toda a compra. Por favor, selecione outra forma de pagamento (Dinheiro, PIX ou Cartão) para pagar a diferença!");
+            return alert("O limite do colaborador não cobre toda a compra. Por favor, selecione outra forma de pagamento para pagar a diferença!");
         }
 
         formaPgtoRecibo = valorCobrado === 0 ? 'Voucher (Total)' : `Voucher + ${pagamentoSelecionado}`;
 
-        // Desconta o valor usado do limite do cliente no Firebase
         try {
             await updateDoc(doc(db, "clientes", clienteData.id), { saldo: clienteData.saldo - voucherUsado });
         } catch(e) { console.error("Erro ao atualizar saldo:", e); }
     }
     
-    // Salva a venda no Firebase
     try { 
         await addDoc(collection(db, "vendas"), { 
-            nroPedido, 
-            itens: cart, 
-            total: cartTotal, 
-            voucherUsado: voucherUsado,
-            valorDinheiroCartao: valorCobrado,
-            cliente: clienteData.nome, 
-            pagamento: formaPgtoRecibo, 
-            data: serverTimestamp() 
+            nroPedido, itens: cart, total: cartTotal, voucherUsado: voucherUsado, valorDinheiroCartao: valorCobrado,
+            cliente: clienteData.nome, pagamento: formaPgtoRecibo, data: serverTimestamp() 
         });
     } catch(e) { return alert("Erro ao salvar venda."); }
     
-    // CONSTRUÇÃO DO RECIBO
     let itemsHtml = '';
     cart.forEach(item => { itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>${item.qty}x ${item.nome}</span><span>R$ ${(item.preco * item.qty).toFixed(2).replace('.', ',')}</span></div>`; });
     
@@ -381,7 +467,6 @@ document.getElementById('btn-checkout').addEventListener('click', async () => {
         if (valorCobrado > 0) reciboPagto += `<p style="font-size: 10px; font-weight:bold;">Valor Complementar: R$ ${valorCobrado.toFixed(2).replace('.',',')}</p>`;
     }
 
-    // Puxa a logo das configurações e aplica um filtro preto e branco para a Zebra
     let logoHtml = '';
     if (systemSettings.logoUrl) {
         logoHtml = `<img src="${systemSettings.logoUrl}" style="width: 40mm; max-width: 100%; margin: 0 auto 10px auto; display: block; filter: grayscale(100%) contrast(150%);">`;
@@ -410,17 +495,16 @@ document.getElementById('btn-checkout').addEventListener('click', async () => {
     
     document.getElementById('print-section').innerHTML = receipt; 
     
-    // Dá um pequeno atraso (100ms) para o navegador montar o recibo sem travar a tela
     setTimeout(() => {
         window.print();
         cart = []; updateCartUI();
         clientePdvSelecionado = null; 
-        document.getElementById('pdv-cliente').value = ""; // Volta pro avulso
+        document.getElementById('pdv-cliente').value = ""; 
     }, 100);
 });
 
 // ==========================================
-// 6. DASHBOARD FINANCEIRO (COM DELETE)
+// 6. DASHBOARD FINANCEIRO
 // ==========================================
 function initDashboard() {
     onSnapshot(collection(db, "vendas"), (snapshot) => {
@@ -430,15 +514,12 @@ function initDashboard() {
         snapshot.forEach((docSnap) => {
             const venda = docSnap.data();
             totalOrders++;
-            
-            // Lógica nova para Dashboard usando os valores separados
             totalVouchers += (venda.voucherUsado || 0);
-            totalRevenue += (venda.valorDinheiroCartao !== undefined ? venda.valorDinheiroCartao : venda.total); // Fallback pra vendas antigas
+            totalRevenue += (venda.valorDinheiroCartao !== undefined ? venda.valorDinheiroCartao : venda.total); 
 
             const div = document.createElement('div');
             div.className = 'flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100 hover:shadow-sm transition mb-3';
             
-            // Define a cor da badge visualmente (se for 100% voucher fica roxo, se teve $ real fica azul)
             const isSomenteVoucher = venda.total > 0 && venda.valorDinheiroCartao === 0;
             const corPgto = isSomenteVoucher ? 'text-purple-600 bg-purple-100' : 'text-blue-600 bg-blue-100';
             
