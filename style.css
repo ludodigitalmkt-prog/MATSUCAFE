@@ -19,29 +19,13 @@
 /* 1. Esconde o texto do recibo na tela normal do computador */
 @media screen {
     #print-section {
-        /* 3. Libera o recibo para crescer o quanto precisar */
-    #print-section {
-        display: block !important;
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 80mm !important; 
-        height: auto !important; 
-        overflow: visible !important;
-        margin: 0;
-        padding: 2mm;
-        padding-bottom: 20mm !important; /* 🔥 ESSA É A MÁGICA: Empurra o papel 2cm para fora */
-        color: #000 !important;
-        font-family: 'Courier New', Courier, monospace;
-        font-weight: bold;
-    }
         display: none !important;
     }
 }
 
 /* 2. Regras ativadas apenas na hora da impressão */
 @media print {
-    /* 1. Desliga as travas de altura da tela do sistema original */
+    /* Desliga as travas de altura da tela do sistema original */
     html, body {
         display: block !important;
         background-color: white !important;
@@ -53,13 +37,13 @@
         padding: 0 !important;
     }
 
-    /* 2. Esconde todo o sistema para não sair na bobina */
-    #app-container, #login-screen {
+    /* Esconde todo o sistema para não sair na bobina */
+    #app-container, #login-screen, [id^="modal-"] {
         display: none !important;
     }
 
-    /* 3. Libera o recibo para crescer o quanto precisar */
-     {
+    /* Libera o recibo para crescer o quanto precisar */
+    #print-section {
         display: block !important;
         position: absolute !important;
         top: 0 !important;
@@ -69,6 +53,7 @@
         overflow: visible !important;
         margin: 0;
         padding: 2mm;
+        padding-bottom: 20mm !important; /* Empurra o papel 2cm para fora */
         color: #000 !important;
         font-family: 'Courier New', Courier, monospace;
         font-weight: bold; /* Negrito */
