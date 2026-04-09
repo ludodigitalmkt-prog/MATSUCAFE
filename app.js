@@ -177,27 +177,89 @@ window.printHistory = () => {
 };
 
 // ==========================================
-// ESTOQUE (PRODUTOS E QUEBRAS)
+// ESTOQUE (PRODUTOS E LOTES) - VERSÃO PRO
 // ==========================================
 async function loadProducts() {
     onSnapshot(collection(db, "produtos"), (snapshot) => {
-        products = []; const list = document.getElementById('admin-product-list'); const quebraSelect = document.getElementById('quebra-produto');
-        list.innerHTML = ''; quebraSelect.innerHTML = '<option value="">Selecione o Produto</option>';
+        products = []; 
+        const list = document.getElementById('admin-product-list'); 
+        const quebraSelect = document.getElementById('quebra-produto');
+        
+        list.innerHTML = ''; 
+        quebraSelect.innerHTML = '<option value="">Selecione o Produto</option>';
+        
+        const hoje = new Date();
+        hoje.setHours(0,0,0,0);
+
         snapshot.forEach((docSnap) => {
-            const p = { id: docSnap.id, ...docSnap.data() }; products.push(p);
-            const isVencendo = p.validade && new Date(p.validade) <= new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
+            const p = { id: docSnap.id, ...docSnap.data() }; 
             
-            const tr = document.createElement('tr'); tr.className = "border-b hover:bg-gray-50 transition";
+            // Garante compatibilidade caso ainda existam produtos no formato antigo
+            if(p.estoque !== undefined && !p.lotes) {
+                p.estoque_total = p.estoque;
+                p.lotes = [{ id_lote: Date.now().toString(), quantidade: p.estoque, data_entrada: p.validade || '-', validade: p.validade || '', tipo: 'unidade' }];
+            }
+
+            products.push(p);
+
+            // Calcula o estoque total somando os lotes
+            const totalEstoque = (p.lotes || []).reduce((acc, lote) => acc + lote.quantidade, 0);
+            
+            // Encontra o lote mais próximo do vencimento que ainda tenha estoque
+            const lotesComEstoque = (p.lotes || []).filter(l => l.quantidade > 0 && l.validade);
+            lotesComEstoque.sort((a, b) => new Date(a.validade) - new Date(b.validade));
+            const loteMaisProximo = lotesComEstoque[0];
+
+            let statusVencimentoHtml = '<span class="text-gray-400">Sem validade</span>';
+            
+            if (loteMaisProximo) {
+                const dataValidade = new Date(loteMaisProximo.validade);
+                dataValidade.setHours(0,0,0,0);
+                
+                const diffTempo = dataValidade.getTime() - hoje.getTime();
+                const diffDias = Math.ceil(diffTempo / (1000 * 3600 * 24));
+                const dataFormatada = loteMaisProximo.validade.split('-').reverse().join('/');
+
+                if (diffDias < 0) {
+                    // Vencido
+                    statusVencimentoHtml = `<span class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-black animate-pulse">VENCIDO (${dataFormatada})</span>`;
+                } else if (diffDias <= 7) {
+                    // Próximo do vencimento (Crítico - 7 dias)
+                    statusVencimentoHtml = `<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-black">Alerta: ${diffDias} dias (${dataFormatada})</span>`;
+                } else if (diffDias <= 30) {
+                    // Atenção (30 dias)
+                    statusVencimentoHtml = `<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg text-xs font-bold">Vence em ${diffDias} dias</span>`;
+                } else {
+                    // OK
+                    statusVencimentoHtml = `<span class="text-green-600 font-bold">${dataFormatada}</span>`;
+                }
+            }
+
+            const tr = document.createElement('tr'); 
+            tr.className = "border-b hover:bg-gray-50 transition";
             tr.innerHTML = `
-                <td class="p-5 flex items-center gap-3"><img src="${p.imagem}" class="w-10 h-10 rounded-lg object-cover"><span class="font-bold">${p.nome}</span></td>
-                <td class="p-5"><span class="bg-gray-100 px-3 py-1 rounded-full text-xs font-bold">${p.categoria}</span></td>
-                <td class="p-5 font-black">${p.estoque} un</td>
-                <td class="p-5 font-bold ${isVencendo ? 'text-red-500 animate-pulse' : 'text-gray-400'}">${p.validade ? p.validade.split('-').reverse().join('/') : '---'}</td>
-                <td class="p-5 text-right"><button class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg btn-edit"><i class="ph ph-pencil-simple"></i></button> <button class="text-red-500 hover:bg-red-50 p-2 rounded-lg btn-del"><i class="ph ph-trash"></i></button></td>
+                <td class="p-5 flex items-center gap-3">
+                    <img src="${p.imagem}" class="w-10 h-10 rounded-lg object-cover shadow-sm">
+                    <div>
+                        <span class="font-black text-gray-800 block">${p.nome}</span>
+                        <span class="text-[10px] text-gray-400 font-bold">${(p.lotes || []).length} lote(s) cadastrado(s)</span>
+                    </div>
+                </td>
+                <td class="p-5"><span class="bg-gray-100 px-3 py-1 rounded-full text-xs font-bold border">${p.categoria}</span></td>
+                <td class="p-5 font-black text-lg ${totalEstoque <= 5 ? 'text-red-500' : 'text-blue-600'}">${totalEstoque} un</td>
+                <td class="p-5">${statusVencimentoHtml}</td>
+                <td class="p-5 text-right">
+                    <button class="bg-blue-50 text-blue-500 hover:bg-blue-100 p-2 rounded-xl transition btn-add-lote" title="Adicionar Lote/Editar"><i class="ph ph-plus-circle text-xl"></i></button> 
+                    <button class="bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-xl transition btn-del" title="Excluir Produto"><i class="ph ph-trash text-xl"></i></button>
+                </td>
             `;
-            tr.querySelector('.btn-edit').onclick = () => window.openProductModal(p);
-            tr.querySelector('.btn-del').onclick = async () => { if(confirm('Excluir permanentemente?')) await deleteDoc(doc(db, "produtos", p.id)); };
-            list.appendChild(tr); quebraSelect.innerHTML += `<option value="${p.id}">${p.nome}</option>`;
+            
+            // O botão agora abre o modal para adicionar um novo lote ou editar os dados base
+            tr.querySelector('.btn-add-lote').onclick = () => window.openProductModal(p);
+            tr.querySelector('.btn-del').onclick = async () => { if(confirm('Excluir produto e todos os seus lotes permanentemente?')) await deleteDoc(doc(db, "produtos", p.id)); };
+            
+            list.appendChild(tr); 
+            quebraSelect.innerHTML += `<option value="${p.id}">${p.nome} (${totalEstoque} disp.)</option>`;
         });
         buildCategoryTabs();
     });
@@ -205,13 +267,70 @@ async function loadProducts() {
 
 document.getElementById('btn-save-product').onclick = async () => {
     const id = document.getElementById('edit-id').value;
-    const data = {
-        nome: document.getElementById('prod-nome').value, categoria: document.getElementById('prod-categoria').value || 'Geral',
-        preco: parseFloat(document.getElementById('prod-venda').value || 0), custo: parseFloat(document.getElementById('prod-custo').value || 0),
-        estoque: parseInt(document.getElementById('prod-estoque').value || 0), validade: document.getElementById('prod-validade').value,
+    const nomeProduto = document.getElementById('prod-nome').value.trim();
+    const qtdLote = parseInt(document.getElementById('prod-estoque-lote').value || 0);
+    
+    if(!nomeProduto) return alert("O nome do produto é obrigatório!");
+
+    const novoLote = {
+        id_lote: `lote_${Date.now()}`,
+        tipo: document.getElementById('prod-tipo-lote').value,
+        quantidade: qtdLote,
+        data_entrada: document.getElementById('prod-entrada').value || new Date().toISOString().split('T')[0],
+        validade: document.getElementById('prod-validade').value
+    };
+
+    const dadosBaseProduto = {
+        nome: nomeProduto, 
+        categoria: document.getElementById('prod-categoria').value || 'Geral',
+        preco: parseFloat(document.getElementById('prod-venda').value || 0), 
+        custo: parseFloat(document.getElementById('prod-custo').value || 0),
         imagem: document.getElementById('prod-imagem').value || 'https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=300&q=80'
     };
-    if(id) await updateDoc(doc(db, "produtos", id), data); else await addDoc(collection(db, "produtos"), data);
+
+    if (id) {
+        // Produto já existe (vamos adicionar o lote ao array existente)
+        const produtoAtual = products.find(p => p.id === id);
+        let lotesAtuais = produtoAtual.lotes || [];
+        
+        // Só adiciona o lote se a quantidade for maior que 0
+        if (qtdLote > 0) {
+            lotesAtuais.push(novoLote);
+        }
+
+        const estoque_total = lotesAtuais.reduce((acc, l) => acc + l.quantidade, 0);
+
+        await updateDoc(doc(db, "produtos", id), {
+            ...dadosBaseProduto,
+            lotes: lotesAtuais,
+            estoque_total: estoque_total
+        });
+
+    } else {
+        // É um produto totalmente novo
+        // Verifica se já existe um com esse exato nome para evitar duplicidade (Cadastro Inteligente)
+        const produtoExistente = products.find(p => p.nome.toLowerCase() === nomeProduto.toLowerCase());
+        
+        if (produtoExistente) {
+             if(confirm(`Já existe um produto chamado "${produtoExistente.nome}". Deseja apenas adicionar este novo lote a ele?`)) {
+                 let lotesAtuais = produtoExistente.lotes || [];
+                 if (qtdLote > 0) lotesAtuais.push(novoLote);
+                 const estoque_total = lotesAtuais.reduce((acc, l) => acc + l.quantidade, 0);
+                 
+                 await updateDoc(doc(db, "produtos", produtoExistente.id), { lotes: lotesAtuais, estoque_total: estoque_total });
+                 window.closeModals();
+                 return;
+             }
+        }
+
+        // Se não existir, cria o documento novo
+        await addDoc(collection(db, "produtos"), {
+            ...dadosBaseProduto,
+            lotes: qtdLote > 0 ? [novoLote] : [],
+            estoque_total: qtdLote
+        });
+    }
+
     window.closeModals();
 };
 
@@ -233,7 +352,11 @@ document.getElementById('btn-add-quebra').onclick = async () => {
     const p = products.find(prod => prod.id === pId);
     if(!p || !qty) return alert("Preencha corretamente!");
     await addDoc(collection(db, "quebras"), { produtoId: pId, produtoNome: p.nome, qtd: qty, motivo: document.getElementById('quebra-motivo').value || '-', valorPerda: p.custo * qty, data: serverTimestamp(), dataSimples: new Date().toISOString().split('T')[0] });
-    await updateDoc(doc(db, "produtos", pId), { estoque: p.estoque - qty });
+    
+    // Atualiza a quebra também na nova lógica de lotes (desconta do estoque_total)
+    const novoEstoque = (p.estoque_total || p.estoque) - qty;
+    await updateDoc(doc(db, "produtos", pId), { estoque_total: novoEstoque, estoque: novoEstoque });
+    
     document.getElementById('quebra-qty').value = ''; document.getElementById('quebra-motivo').value = '';
 };
 
@@ -345,10 +468,13 @@ document.getElementById('btn-checkout').onclick = async () => {
         data: serverTimestamp(), dataSimples: dataAtualStr, itens: cart.map(i => ({ nome: i.nome, qtd: i.qty, preco: i.preco }))
     });
 
-    // 2. Baixa Estoque
+    // 2. Baixa Estoque (Ajustado para novo formato)
     for(const item of cart) {
         const p = products.find(prod => prod.id === item.id);
-        if(p) await updateDoc(doc(db, "produtos", p.id), { estoque: p.estoque - item.qty });
+        if(p) {
+            const novoEstoque = (p.estoque_total || p.estoque) - item.qty;
+            await updateDoc(doc(db, "produtos", p.id), { estoque_total: novoEstoque, estoque: novoEstoque });
+        }
     }
 
     // 3. Montar Cupom Customizado (Com dados da Aba Ajustes)
@@ -394,4 +520,33 @@ document.getElementById('btn-print-day').onclick = () => {
         </div>
     `;
     window.print();
+};
+
+// ==========================================
+// FUNÇÕES DE MODAL VINCULADAS AO WINDOW
+// ==========================================
+window.openProductModal = (p = null) => {
+    document.getElementById('modal-produto').classList.remove('hidden');
+    document.getElementById('edit-id').value = p ? p.id : '';
+    
+    // Limpa dados do lote atual
+    document.getElementById('prod-estoque-lote').value = '';
+    document.getElementById('prod-entrada').value = new Date().toISOString().split('T')[0];
+    document.getElementById('prod-validade').value = '';
+
+    if(p) {
+        document.getElementById('modal-title').innerText = "Editar Produto";
+        const subtitle = document.getElementById('modal-subtitle');
+        if(subtitle) subtitle.classList.remove('hidden');
+        
+        document.getElementById('prod-nome').value = p.nome; 
+        document.getElementById('prod-categoria').value = p.categoria;
+        document.getElementById('prod-venda').value = p.preco; 
+        document.getElementById('prod-custo').value = p.custo;
+        document.getElementById('prod-imagem').value = p.imagem;
+    } else {
+        document.getElementById('modal-title').innerText = "Novo Produto";
+        const subtitle = document.getElementById('modal-subtitle');
+        if(subtitle) subtitle.classList.add('hidden');
+    }
 };
