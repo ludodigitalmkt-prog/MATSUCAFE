@@ -43,16 +43,22 @@
             <button id="btn-logout" class="w-16 h-16 flex flex-col items-center justify-center gap-1 rounded-2xl hover:bg-red-500/20 text-red-200 transition mt-auto"><i class="ph ph-sign-out text-2xl"></i><span class="text-[10px] font-medium">Sair</span></button>
         </aside>
 
-        <main id="tab-pdv" class="flex-1 flex flex-col h-full overflow-hidden bg-gray-50">
-            <header class="bg-white shadow-sm p-4 flex flex-wrap justify-between items-center z-10 border-b border-gray-200 gap-4">
-                <div><h1 class="text-2xl font-black text-gray-800">Frente de Caixa</h1></div>
+<header class="bg-white shadow-sm p-4 flex flex-wrap justify-between items-center z-10 border-b border-gray-200 gap-4">
+                <div>
+                    <h1 class="text-2xl font-black text-gray-800">Frente de Caixa</h1>
+                    <p id="pdv-voucher-info" class="text-sm font-bold text-purple-600 hidden">Saldo Voucher: <span id="pdv-voucher-saldo">R$ 0,00</span></p>
+                </div>
                 <div class="flex flex-wrap gap-2 md:gap-4 items-center">
                     <input type="text" id="pdv-cpf" placeholder="CPF na Nota (Opcional)" class="p-3 bg-gray-50 border rounded-xl text-sm outline-none w-48">
                     <select id="pdv-cliente" class="p-3 bg-gray-50 border rounded-xl font-bold text-gray-700 outline-none">
-                        <option value="Avulso">Cliente Avulso</option>
+                        <option value="Avulso" data-tipo="Cliente">Cliente Avulso</option>
                     </select>
                     <select id="pdv-pagamento" class="p-3 bg-gray-50 border rounded-xl font-bold text-gray-700 outline-none">
-                        <option value="Dinheiro">Dinheiro</option><option value="PIX">PIX</option><option value="Crédito">Crédito</option><option value="Débito">Débito</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                        <option value="PIX">PIX</option>
+                        <option value="Débito">Débito</option>
+                        <option value="Crédito">Crédito</option>
+                        <option value="Voucher">Voucher</option>
                     </select>
                 </div>
             </header>
