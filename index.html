@@ -57,6 +57,10 @@
                     </select>
                 </div>
             </header>
+            
+            <div id="category-tabs" class="flex gap-3 p-4 overflow-x-auto hide-scrollbar bg-white border-b border-gray-200 shadow-sm z-10">
+                </div>
+
             <div id="product-grid" class="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 hide-scrollbar content-start"></div>
         </main>
 
@@ -81,15 +85,19 @@
         <main id="tab-menu" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
             <h2 class="text-3xl font-black text-gray-800 mb-8">Produtos e Estoque</h2>
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 mb-8">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                     <input type="text" id="prod-barcode" placeholder="Código de Barras" class="p-4 bg-yellow-50 rounded-2xl border border-yellow-200 font-bold">
                     <input type="text" id="prod-nome" placeholder="Nome do Produto" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                    
+                    <input type="text" id="prod-categoria" placeholder="Categoria (Ex: Bebidas)" list="categorias-list" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                    <datalist id="categorias-list"></datalist>
+
                     <input type="text" id="prod-unidade" placeholder="Und (Ex: Kg, Un)" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
                     <input type="number" id="prod-estoque" placeholder="Qtd Estoque" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
                     <input type="number" id="prod-custo" placeholder="Custo Real (R$)" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
                     <input type="number" id="prod-venda" placeholder="Valor Venda (R$)" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
                     <input type="date" id="prod-validade" class="p-4 bg-gray-50 rounded-2xl border border-gray-200 text-gray-500">
-                    <input type="text" id="prod-imagem" placeholder="URL da Imagem" class="p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                    <input type="text" id="prod-imagem" placeholder="URL da Imagem" class="md:col-span-2 p-4 bg-gray-50 rounded-2xl border border-gray-200">
                 </div>
                 <button id="btn-add-product" class="theme-bg text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:opacity-90">Salvar Produto</button>
             </div>
