@@ -7,67 +7,62 @@
     scrollbar-width: none;
 }
 
-/* Área segura para o entalhe de iPhones */
+/* Área segura para smartphones */
 .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Garante que links longos nas configurações não quebrem a tela */
+input, textarea {
+    word-break: break-word;
+}
+
 /* ==========================================
-   CONFIGURAÇÕES DE IMPRESSÃO (RECIBO TÉRMICO)
+   CONFIGURAÇÕES DE IMPRESSÃO (RECIBO MODERNO)
    ========================================== */
 
-/* 1. Esconde o texto do recibo na tela normal do computador */
 @media screen {
     #print-section {
         display: none !important;
     }
 }
 
-/* 2. Regras ativadas apenas na hora da impressão */
 @media print {
-    /* Desliga as travas de altura da tela do sistema original */
     html, body {
-        display: block !important;
         background-color: white !important;
-        height: auto !important;
-        min-height: 100% !important;
-        overflow: visible !important;
-        position: static !important;
         margin: 0 !important;
         padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
     }
 
-    /* Esconde todo o sistema para não sair na bobina */
     #app-container, #login-screen, [id^="modal-"] {
         display: none !important;
     }
 
-    /* Libera o recibo para crescer o quanto precisar */
     #print-section {
         display: block !important;
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 80mm !important; /* Largura da bobina */
-        height: auto !important; /* Altura livre */
-        overflow: visible !important;
-        margin: 0;
-        padding: 2mm;
-        padding-bottom: 20mm !important; /* Empurra o papel 2cm para fora */
+        width: 80mm !important; /* Padrão exato de bobina térmica */
+        margin: 0 auto;
+        padding: 2mm 5mm 15mm 5mm; /* Margem extra no final para corte */
         color: #000 !important;
-        font-family: 'Courier New', Courier, monospace;
-        font-weight: bold; /* Negrito */
+        font-family: 'Courier New', Courier, monospace; /* Fonte padrão de cupom */
+        font-size: 12px;
     }
 
-    /* Melhora a nitidez */
+    /* Classes do Cupom Moderno */
+    .receipt-header { text-align: center; margin-bottom: 10px; }
+    .receipt-logo { max-width: 65px; max-height: 65px; object-fit: contain; margin: 0 auto 8px auto; display: block; border-radius: 8px; }
+    .receipt-title { font-size: 16px; font-weight: bold; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+    .receipt-info { font-size: 11px; margin: 3px 0; color: #000; }
+    .receipt-divider { border-top: 1px dashed #000; margin: 10px 0; }
+    .receipt-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; line-height: 1.2; }
+    .receipt-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; margin-top: 5px; }
+    .receipt-footer { text-align: center; font-size: 11px; margin-top: 15px; font-style: italic; }
+
     * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
-
-    /* Deixa o tamanho do papel livre para a impressora cortar sozinha */
-    @page {
-        margin: 0;
-        size: auto; 
-    }
+    @page { margin: 0; size: auto; }
 }
