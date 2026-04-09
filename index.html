@@ -30,35 +30,33 @@
 
     <div id="app-container" class="flex w-full h-full">
         
-        <aside class="hidden md:flex flex-col w-24 theme-bg text-white items-center py-6 gap-4 shadow-2xl z-30 overflow-y-auto hide-scrollbar rounded-r-3xl">
+        <aside class="hidden md:flex flex-col w-24 theme-bg text-white items-center py-6 gap-2 shadow-2xl z-30 overflow-y-auto hide-scrollbar rounded-r-3xl">
             <div class="mb-4">
                 <img src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=100&q=80" class="w-12 h-12 rounded-full border-2 border-white/20 object-cover">
             </div>
             <button id="nav-pdv" class="w-16 h-16 flex flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-shopping-cart text-2xl"></i><span class="text-[10px] font-medium">PDV</span></button>
             <button id="nav-crm" class="w-16 h-16 flex flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-users text-2xl"></i><span class="text-[10px] font-medium">Contatos</span></button>
             <button id="nav-menu" class="admin-only hidden w-16 h-16 flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-package text-2xl"></i><span class="text-[10px] font-medium">Estoque</span></button>
+            <button id="nav-combos" class="admin-only hidden w-16 h-16 flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-intersect text-2xl"></i><span class="text-[10px] font-medium">Combos</span></button>
             <button id="nav-quebras" class="admin-only hidden w-16 h-16 flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-warning-circle text-2xl"></i><span class="text-[10px] font-medium">Quebras</span></button>
             <button id="nav-financeiro" class="admin-only hidden w-16 h-16 flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-chart-line-up text-2xl"></i><span class="text-[10px] font-medium">Finanças</span></button>
             <button id="nav-settings" class="admin-only hidden w-16 h-16 flex-col items-center justify-center gap-1 rounded-2xl hover:bg-white/10 transition"><i class="ph ph-gear text-2xl"></i><span class="text-[10px] font-medium">Ajustes</span></button>
             <button id="btn-logout" class="w-16 h-16 flex flex-col items-center justify-center gap-1 rounded-2xl hover:bg-red-500/20 text-red-200 transition mt-auto"><i class="ph ph-sign-out text-2xl"></i><span class="text-[10px] font-medium">Sair</span></button>
         </aside>
 
-<header class="bg-white shadow-sm p-4 flex flex-wrap justify-between items-center z-10 border-b border-gray-200 gap-4">
+        <main id="tab-pdv" class="flex-1 flex flex-col h-full overflow-hidden bg-gray-50">
+            <header class="bg-white shadow-sm p-4 flex flex-wrap justify-between items-center z-10 border-b border-gray-200 gap-4">
                 <div>
                     <h1 class="text-2xl font-black text-gray-800">Frente de Caixa</h1>
-                    <p id="pdv-voucher-info" class="text-sm font-bold text-purple-600 hidden">Saldo Voucher: <span id="pdv-voucher-saldo">R$ 0,00</span></p>
+                    <p id="pdv-voucher-info" class="text-sm font-bold text-purple-600 hidden">Saldo Benefício: <span id="pdv-voucher-saldo">R$ 0,00</span></p>
                 </div>
                 <div class="flex flex-wrap gap-2 md:gap-4 items-center">
                     <input type="text" id="pdv-cpf" placeholder="CPF na Nota (Opcional)" class="p-3 bg-gray-50 border rounded-xl text-sm outline-none w-48">
                     <select id="pdv-cliente" class="p-3 bg-gray-50 border rounded-xl font-bold text-gray-700 outline-none">
-                        <option value="Avulso" data-tipo="Cliente">Cliente Avulso</option>
+                        <option value="Avulso">Cliente Avulso</option>
                     </select>
                     <select id="pdv-pagamento" class="p-3 bg-gray-50 border rounded-xl font-bold text-gray-700 outline-none">
-                        <option value="Dinheiro">Dinheiro</option>
-                        <option value="PIX">PIX</option>
-                        <option value="Débito">Débito</option>
-                        <option value="Crédito">Crédito</option>
-                        <option value="Voucher">Voucher</option>
+                        <option value="Dinheiro">Dinheiro</option><option value="PIX">PIX</option><option value="Crédito">Crédito</option><option value="Débito">Débito</option><option value="Voucher">Voucher / Benefício</option>
                     </select>
                 </div>
             </header>
@@ -68,16 +66,16 @@
 
         <main id="tab-crm" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
             <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-black text-gray-800">Clientes e Colaboradores</h2>
+                <h2 class="text-3xl font-black text-gray-800">Contatos e Colaboradores</h2>
                 <div class="flex gap-4">
-                    <input type="text" id="search-cliente" placeholder="Pesquisar por nome..." class="p-3 bg-white border rounded-2xl w-64 shadow-sm outline-none">
-                    <button onclick="openClientModal()" class="theme-bg text-white px-6 py-3 rounded-2xl font-bold shadow-lg">+ Novo Cadastro</button>
+                    <input type="text" id="search-cliente" placeholder="Pesquisar..." class="p-3 bg-white border rounded-2xl w-64 shadow-sm outline-none">
+                    <button onclick="window.openClientModal()" class="theme-bg text-white px-6 py-3 rounded-2xl font-bold shadow-lg">+ Novo Cadastro</button>
                 </div>
             </div>
             <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
                 <table class="w-full text-left">
                     <thead class="bg-gray-50 text-gray-400 text-xs uppercase font-black">
-                        <tr><th class="p-4">Nome</th><th class="p-4">Tipo</th><th class="p-4">Telefone</th><th class="p-4 text-right">Ações</th></tr>
+                        <tr><th class="p-4">Nome</th><th class="p-4">Tipo/Benefício</th><th class="p-4">Telefone</th><th class="p-4 text-right">Ações</th></tr>
                     </thead>
                     <tbody id="crm-list"></tbody>
                 </table>
@@ -87,15 +85,25 @@
         <main id="tab-menu" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-black text-gray-800">Controle de Estoque</h2>
-                <button onclick="openProductModal()" class="theme-bg text-white px-6 py-3 rounded-2xl font-bold shadow-lg">+ Novo Produto</button>
+                <button onclick="window.openProductModal()" class="theme-bg text-white px-6 py-3 rounded-2xl font-bold shadow-lg">+ Novo Produto/Lote</button>
             </div>
             <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
                 <table class="w-full text-left">
                     <thead class="bg-gray-50 text-gray-400 text-xs uppercase font-black">
-                        <tr><th class="p-5">Produto</th><th class="p-5">Categoria</th><th class="p-5">Estoque</th><th class="p-5">Vencimento</th><th class="p-5 text-right">Ações</th></tr>
+                        <tr><th class="p-5">Produto</th><th class="p-5">Categoria</th><th class="p-5">Estoque</th><th class="p-5">Vencimento (Lote mais próximo)</th><th class="p-5 text-right">Ações</th></tr>
                     </thead>
                     <tbody id="admin-product-list"></tbody>
                 </table>
+            </div>
+        </main>
+
+        <main id="tab-combos" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-black text-gray-800">Gerenciar Combos</h2>
+                <button onclick="window.openComboModal()" class="theme-bg text-white px-6 py-3 rounded-2xl font-bold shadow-lg">+ Novo Combo</button>
+            </div>
+            <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden p-6">
+                <div id="combos-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
             </div>
         </main>
 
@@ -120,22 +128,35 @@
                     <input type="date" id="filtro-data" class="p-3 rounded-2xl border font-bold">
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border-b-4 border-green-500 text-center">
-                    <p class="text-gray-400 text-xs font-black uppercase mb-1">Entradas</p>
-                    <h3 id="dash-revenue" class="text-4xl font-black">R$ 0,00</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border-b-4 border-green-500 text-center">
+                    <p class="text-gray-400 text-[10px] font-black uppercase mb-1">Vendas (Faturamento)</p>
+                    <h3 id="dash-revenue" class="text-2xl font-black text-green-600">R$ 0,00</h3>
                 </div>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border-b-4 border-red-500 text-center">
-                    <p class="text-gray-400 text-xs font-black uppercase mb-1">Saídas (Quebras)</p>
-                    <h3 id="dash-loss" class="text-4xl font-black text-red-500">R$ 0,00</h3>
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border-b-4 border-orange-400 text-center">
+                    <p class="text-gray-400 text-[10px] font-black uppercase mb-1">Custo dos Produtos</p>
+                    <h3 id="dash-cost" class="text-2xl font-black text-orange-500">R$ 0,00</h3>
                 </div>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border-b-4 border-blue-500 text-center">
-                    <p class="text-gray-400 text-xs font-black uppercase mb-1">Saldo Líquido</p>
-                    <h3 id="dash-net" class="text-4xl font-black">R$ 0,00</h3>
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border-b-4 border-blue-500 text-center">
+                    <p class="text-gray-400 text-[10px] font-black uppercase mb-1">Lucro Real (Vendas - Custo)</p>
+                    <h3 id="dash-profit" class="text-2xl font-black text-blue-600">R$ 0,00</h3>
+                </div>
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border-b-4 border-purple-500 text-center">
+                    <p class="text-gray-400 text-[10px] font-black uppercase mb-1">Vouchers Pendentes (A Receber)</p>
+                    <h3 id="dash-vouchers" class="text-2xl font-black text-purple-600">R$ 0,00</h3>
                 </div>
             </div>
-            <h3 class="text-xl font-bold mb-4">Lançamentos do Dia</h3>
-            <div id="sales-history-list" class="flex flex-col gap-3"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Vendas Realizadas</h3>
+                    <div id="sales-history-list" class="flex flex-col gap-3"></div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-purple-700">Contas a Receber (Vouchers)</h3>
+                    <div id="vouchers-history-list" class="flex flex-col gap-3"></div>
+                </div>
+            </div>
         </main>
 
         <main id="tab-settings" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
@@ -152,7 +173,7 @@
                     </div>
                 </div>
                 <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                    <h3 class="text-lg font-bold mb-4">Dados do Recibo</h3>
+                    <h3 class="text-lg font-bold mb-4">Dados do Recibo Térmico</h3>
                     <div class="flex flex-col gap-3">
                         <input type="text" id="cfg-nome" placeholder="Nome da Loja" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none font-bold">
                         <input type="text" id="cfg-cnpj" placeholder="CNPJ" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
@@ -186,7 +207,7 @@
                     <h3 id="modal-title" class="text-2xl font-black">Produto</h3>
                     <p id="modal-subtitle" class="text-sm text-gray-500 font-bold hidden">Adicionando novo lote a um produto existente</p>
                 </div>
-                <button onclick="closeModals()" class="text-3xl">&times;</button>
+                <button onclick="window.closeModals()" class="text-3xl">&times;</button>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -205,9 +226,7 @@
                 <div>
                     <label class="text-xs font-bold text-gray-400 ml-2">Tipo de Entrada</label>
                     <select id="prod-tipo-lote" class="w-full p-4 bg-white border rounded-2xl outline-none font-bold">
-                        <option value="unidade">Unidades Soltas</option>
-                        <option value="pack">Pack / Fardo</option>
-                        <option value="lote">Lote Fechado</option>
+                        <option value="unidade">Unidades Soltas</option><option value="pack">Pack / Fardo</option><option value="lote">Lote Fechado</option>
                     </select>
                 </div>
                 <div>
@@ -228,6 +247,27 @@
         </div>
     </div>
 
+    <div id="modal-cliente" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl">
+            <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Cadastro</h3><button onclick="window.closeModals()" class="text-3xl">&times;</button></div>
+            <input type="hidden" id="cli-id">
+            <select id="cli-tipo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 font-bold outline-none" onchange="window.toggleVoucher()">
+                <option value="Cliente">Cliente</option>
+                <option value="Colaborador">Colaborador</option>
+            </select>
+            <input type="text" id="cli-nome" placeholder="Nome Completo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none">
+            <input type="text" id="cli-telefone" placeholder="Telefone/WhatsApp" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none">
+            
+            <div id="cli-voucher-container" class="hidden mb-6 bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                <label class="text-xs font-black text-purple-500 uppercase">Limite Mensal do Voucher (R$)</label>
+                <input type="number" step="0.01" id="cli-voucher" placeholder="Ex: 150.00" class="w-full p-3 bg-white mt-2 rounded-xl outline-none font-black text-purple-700">
+                <p class="text-[10px] text-gray-500 mt-2">*O sistema controlará os gastos dele no PDV.</p>
+            </div>
+
+            <button id="btn-save-client" class="w-full theme-bg text-white py-4 rounded-2xl font-black shadow-xl">Salvar</button>
+        </div>
+    </div>
+
     <div id="modal-historico" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
         <div class="bg-white rounded-[2.5rem] w-full max-w-2xl p-8 shadow-2xl flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center mb-4">
@@ -235,50 +275,31 @@
                     <h3 class="text-2xl font-black text-gray-800" id="hist-nome">Nome</h3>
                     <p class="text-gray-500 font-bold">Total Gasto: <span id="hist-total" class="text-green-600">R$ 0,00</span></p>
                 </div>
-                <button onclick="closeModals()" class="text-3xl text-gray-400">&times;</button>
+                <button onclick="window.closeModals()" class="text-3xl text-gray-400">&times;</button>
             </div>
             <div class="flex gap-2 mb-4 bg-gray-50 p-2 rounded-2xl">
                 <input type="date" id="hist-data-inicio" class="p-2 border rounded-xl outline-none text-sm w-full">
                 <input type="date" id="hist-data-fim" class="p-2 border rounded-xl outline-none text-sm w-full">
-                <button onclick="loadClientHistory()" class="bg-blue-500 text-white px-4 rounded-xl font-bold">Filtrar</button>
+                <button onclick="window.loadClientHistory()" class="bg-blue-500 text-white px-4 rounded-xl font-bold">Filtrar</button>
             </div>
             <div id="hist-lista" class="flex-1 overflow-y-auto mb-4 border rounded-2xl p-4 bg-gray-50 hide-scrollbar flex flex-col gap-2"></div>
-            <button onclick="printHistory()" class="w-full bg-gray-800 text-white py-4 rounded-2xl font-black shadow-xl flex items-center justify-center gap-2"><i class="ph ph-printer"></i> Imprimir Histórico</button>
+        </div>
+    </div>
+
+    <div id="modal-combo" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl">
+            <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Criar Combo</h3><button onclick="window.closeModals()" class="text-3xl">&times;</button></div>
+            <input type="text" id="combo-nome" placeholder="Nome do Combo (Ex: Café + Pão de Queijo)" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none font-bold">
+            <input type="number" step="0.01" id="combo-preco" placeholder="Preço Final do Combo (R$)" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none font-bold text-green-600">
+            <p class="text-xs font-bold text-gray-400 mb-2">Selecione os produtos que fazem parte:</p>
+            <div id="combo-produtos-lista" class="max-h-40 overflow-y-auto border p-3 rounded-2xl bg-gray-50 mb-4 flex flex-col gap-2 hide-scrollbar">
+                </div>
+            <button id="btn-save-combo" class="w-full theme-bg text-white py-4 rounded-2xl font-black shadow-xl">Salvar Combo</button>
         </div>
     </div>
 
     <div id="print-section" class="hidden"></div>
 
     <script type="module" src="app.js"></script>
-    <script>
-        // Funções Globais de UI UI 
-        function closeModals() {
-            document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden'));
-            document.querySelectorAll('input').forEach(i => { if(i.type !== 'date') i.value = '' });
-        }
-        function openProductModal(p = null) {
-            document.getElementById('modal-produto').classList.remove('hidden');
-            document.getElementById('edit-id').value = p ? p.id : '';
-            if(p) {
-                document.getElementById('prod-nome').value = p.nome; document.getElementById('prod-categoria').value = p.categoria;
-                document.getElementById('prod-venda').value = p.preco; document.getElementById('prod-custo').value = p.custo;
-                document.getElementById('prod-estoque').value = p.estoque; document.getElementById('prod-validade').value = p.validade || '';
-                document.getElementById('prod-imagem').value = p.imagem;
-            }
-        }
-        function openClientModal(c = null) {
-            document.getElementById('modal-cliente').classList.remove('hidden');
-            document.getElementById('cli-id').value = c ? c.id : '';
-            if(c) {
-                document.getElementById('cli-tipo').value = c.tipo; document.getElementById('cli-nome').value = c.nome;
-                document.getElementById('cli-telefone').value = c.telefone; document.getElementById('cli-voucher').value = c.voucher || '';
-            } else { document.getElementById('cli-tipo').value = 'Cliente'; }
-            toggleVoucher();
-        }
-        function toggleVoucher() {
-            const tipo = document.getElementById('cli-tipo').value;
-            document.getElementById('cli-voucher-container').style.display = tipo === 'Colaborador' ? 'block' : 'none';
-        }
-    </script>
 </body>
 </html>
