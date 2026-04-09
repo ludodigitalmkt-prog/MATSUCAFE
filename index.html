@@ -74,7 +74,7 @@
             </div>
             <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
                 <table class="w-full text-left">
-                    <thead class="bg-gray-50 text-gray-400 text-xs uppercase font-black">
+                    <thead class="bg-gray-50 text-gray-400 text-xs uppercase font-black border-b border-gray-100">
                         <tr><th class="p-4">Nome</th><th class="p-4">Tipo/Benefício</th><th class="p-4">Telefone</th><th class="p-4 text-right">Ações</th></tr>
                     </thead>
                     <tbody id="crm-list"></tbody>
@@ -89,7 +89,7 @@
             </div>
             <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
                 <table class="w-full text-left">
-                    <thead class="bg-gray-50 text-gray-400 text-xs uppercase font-black">
+                    <thead class="bg-gray-50 text-gray-400 text-xs uppercase font-black border-b border-gray-100">
                         <tr><th class="p-5">Produto</th><th class="p-5">Categoria</th><th class="p-5">Estoque</th><th class="p-5">Vencimento (Lote mais próximo)</th><th class="p-5 text-right">Ações</th></tr>
                     </thead>
                     <tbody id="admin-product-list"></tbody>
@@ -111,10 +111,10 @@
             <h2 class="text-3xl font-black text-gray-800 mb-8">Registro de Quebras</h2>
             <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 mb-8">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <select id="quebra-produto" class="p-4 bg-gray-50 rounded-2xl border outline-none"></select>
+                    <select id="quebra-produto" class="p-4 bg-gray-50 rounded-2xl border outline-none font-bold text-gray-700"></select>
                     <input type="number" id="quebra-qty" placeholder="Quantidade" class="p-4 bg-gray-50 rounded-2xl border outline-none">
                     <input type="text" id="quebra-motivo" placeholder="Motivo (Vencido, Danificado...)" class="p-4 bg-gray-50 rounded-2xl border outline-none">
-                    <button id="btn-add-quebra" class="bg-red-500 text-white font-bold rounded-2xl">Registrar Perda</button>
+                    <button id="btn-add-quebra" class="bg-red-500 text-white font-bold rounded-2xl shadow-md hover:bg-red-600 transition">Registrar Perda</button>
                 </div>
             </div>
             <div id="quebra-list" class="flex flex-col gap-3"></div>
@@ -124,8 +124,8 @@
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-black text-gray-800">Relatório Financeiro</h2>
                 <div class="flex gap-2">
-                    <button id="btn-print-day" class="bg-white border-2 border-gray-200 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-gray-50"><i class="ph ph-printer"></i> Imprimir</button>
-                    <input type="date" id="filtro-data" class="p-3 rounded-2xl border font-bold">
+                    <button id="btn-print-day" class="bg-white border-2 border-gray-200 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-gray-50 shadow-sm"><i class="ph ph-printer text-xl"></i> Imprimir Fechamento</button>
+                    <input type="date" id="filtro-data" class="p-3 rounded-2xl border font-bold text-gray-700 outline-none shadow-sm">
                 </div>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -149,11 +149,11 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
-                    <h3 class="text-xl font-bold mb-4">Vendas Realizadas</h3>
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Vendas Realizadas</h3>
                     <div id="sales-history-list" class="flex flex-col gap-3"></div>
                 </div>
                 <div>
-                    <h3 class="text-xl font-bold mb-4 text-purple-700">Contas a Receber (Vouchers)</h3>
+                    <h3 class="text-xl font-bold mb-4 text-purple-700">Contas a Receber (Vouchers Pendentes)</h3>
                     <div id="vouchers-history-list" class="flex flex-col gap-3"></div>
                 </div>
             </div>
@@ -165,23 +165,23 @@
                 <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
                     <h3 class="text-lg font-bold mb-4">Cor do Tema</h3>
                     <div class="flex gap-4">
-                        <button class="w-12 h-12 rounded-full bg-[#14532d] border-4 border-white shadow-md theme-selector" data-color="#14532d"></button>
-                        <button class="w-12 h-12 rounded-full bg-[#7c3aed] border-4 border-white shadow-md theme-selector" data-color="#7c3aed"></button>
-                        <button class="w-12 h-12 rounded-full bg-[#ea580c] border-4 border-white shadow-md theme-selector" data-color="#ea580c"></button>
-                        <button class="w-12 h-12 rounded-full bg-[#be123c] border-4 border-white shadow-md theme-selector" data-color="#be123c"></button>
-                        <button class="w-12 h-12 rounded-full bg-[#1e3a8a] border-4 border-white shadow-md theme-selector" data-color="#1e3a8a"></button>
+                        <button class="w-12 h-12 rounded-full bg-[#14532d] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#14532d"></button>
+                        <button class="w-12 h-12 rounded-full bg-[#7c3aed] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#7c3aed"></button>
+                        <button class="w-12 h-12 rounded-full bg-[#ea580c] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#ea580c"></button>
+                        <button class="w-12 h-12 rounded-full bg-[#be123c] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#be123c"></button>
+                        <button class="w-12 h-12 rounded-full bg-[#1e3a8a] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#1e3a8a"></button>
                     </div>
                 </div>
                 <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
                     <h3 class="text-lg font-bold mb-4">Dados da Empresa e Recibo</h3>
                     <div class="flex flex-col gap-3">
-                        <input type="text" id="cfg-logo" placeholder="Link da Logo (URL)" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
-                        <input type="text" id="cfg-nome" placeholder="Nome da Loja" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none font-bold">
-                        <input type="text" id="cfg-cnpj" placeholder="CNPJ" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
-                        <input type="text" id="cfg-endereco" placeholder="Endereço Completo" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
-                        <input type="text" id="cfg-telefone" placeholder="Telefone/WhatsApp" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
-                        <input type="text" id="cfg-msg" placeholder="Mensagem de Agradecimento" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
-                        <button id="btn-save-cfg" class="theme-bg text-white font-bold p-4 rounded-2xl mt-2 shadow-lg">Salvar Informações</button>
+                        <textarea id="cfg-logo" rows="2" placeholder="Link da Logo (URL)" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none resize-none text-sm text-gray-600"></textarea>
+                        <input type="text" id="cfg-nome" placeholder="Nome da Loja" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none font-black text-gray-800">
+                        <input type="text" id="cfg-cnpj" placeholder="CNPJ" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none text-gray-700">
+                        <textarea id="cfg-endereco" rows="2" placeholder="Endereço Completo" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none resize-none text-gray-700"></textarea>
+                        <input type="text" id="cfg-telefone" placeholder="Telefone/WhatsApp" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none text-gray-700">
+                        <textarea id="cfg-msg" rows="2" placeholder="Mensagem de Agradecimento do Recibo" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none resize-none text-gray-700"></textarea>
+                        <button id="btn-save-cfg" class="theme-bg text-white font-black text-lg p-4 rounded-2xl mt-4 shadow-lg hover:opacity-90 transition">Salvar Informações</button>
                     </div>
                 </div>
             </div>
@@ -193,8 +193,8 @@
             <div class="p-6 bg-gray-50 border-t border-gray-200 rounded-tl-3xl">
                 <div class="flex justify-between mb-6 text-2xl font-black text-gray-800"><span>A Pagar</span><span id="total" class="theme-text">R$ 0,00</span></div>
                 <div class="grid grid-cols-2 gap-3">
-                    <button id="btn-clear" class="py-4 bg-white border-2 rounded-2xl font-bold hover:bg-gray-100">Limpar</button>
-                    <button id="btn-checkout" class="py-4 theme-bg text-white font-bold rounded-2xl shadow-xl hover:opacity-90">Finalizar</button>
+                    <button id="btn-clear" class="py-4 bg-white border-2 rounded-2xl font-bold text-gray-600 hover:bg-gray-100 transition shadow-sm">Limpar</button>
+                    <button id="btn-checkout" class="py-4 theme-bg text-white font-black rounded-2xl shadow-xl hover:scale-105 transition">Finalizar</button>
                 </div>
             </div>
         </aside>
@@ -208,16 +208,16 @@
                     <h3 id="modal-title" class="text-2xl font-black">Produto</h3>
                     <p id="modal-subtitle" class="text-sm text-gray-500 font-bold hidden">Adicionando novo lote a um produto existente</p>
                 </div>
-                <button onclick="window.closeModals()" class="text-3xl">&times;</button>
+                <button onclick="window.closeModals()" class="text-3xl text-gray-400 hover:text-gray-800">&times;</button>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <input type="hidden" id="edit-id">
                 <div class="md:col-span-2"><input type="text" id="prod-nome" placeholder="Nome do Produto" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none font-bold"></div>
                 <div><input type="text" id="prod-categoria" placeholder="Categoria" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
-                <div><input type="text" id="prod-imagem" placeholder="Link da Imagem" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
-                <div><input type="number" step="0.01" id="prod-venda" placeholder="Preço Venda (R$)" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
-                <div><input type="number" step="0.01" id="prod-custo" placeholder="Custo Unitário (R$)" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none"></div>
+                <div><input type="text" id="prod-imagem" placeholder="Link da Imagem" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none text-sm"></div>
+                <div><input type="number" step="0.01" id="prod-venda" placeholder="Preço Venda (R$)" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none font-bold text-blue-600"></div>
+                <div><input type="number" step="0.01" id="prod-custo" placeholder="Custo Unitário (R$)" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none font-bold text-orange-500"></div>
             </div>
 
             <hr class="border-t-2 border-dashed border-gray-200 mb-6">
@@ -226,17 +226,17 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-2xl border">
                 <div>
                     <label class="text-xs font-bold text-gray-400 ml-2">Tipo de Entrada</label>
-                    <select id="prod-tipo-lote" class="w-full p-4 bg-white border rounded-2xl outline-none font-bold">
+                    <select id="prod-tipo-lote" class="w-full p-4 bg-white border rounded-2xl outline-none font-bold text-gray-700">
                         <option value="unidade">Unidades Soltas</option><option value="pack">Pack / Fardo</option><option value="lote">Lote Fechado</option>
                     </select>
                 </div>
                 <div>
                     <label class="text-xs font-bold text-gray-400 ml-2">Qtd. nesta entrada</label>
-                    <input type="number" id="prod-estoque-lote" placeholder="Ex: 50" class="w-full p-4 bg-white border rounded-2xl outline-none font-bold text-blue-600">
+                    <input type="number" id="prod-estoque-lote" placeholder="Ex: 50" class="w-full p-4 bg-white border rounded-2xl outline-none font-black text-green-600">
                 </div>
                 <div>
                     <label class="text-xs font-bold text-gray-400 ml-2">Data de Entrada</label>
-                    <input type="date" id="prod-entrada" class="w-full p-4 bg-white border rounded-2xl outline-none font-bold">
+                    <input type="date" id="prod-entrada" class="w-full p-4 bg-white border rounded-2xl outline-none font-bold text-gray-700">
                 </div>
                 <div>
                     <label class="text-xs font-bold text-gray-400 ml-2">Vencimento Deste Lote</label>
@@ -250,14 +250,14 @@
 
     <div id="modal-cliente" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
         <div class="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl">
-            <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Cadastro</h3><button onclick="window.closeModals()" class="text-3xl">&times;</button></div>
+            <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black text-gray-800">Cadastro</h3><button onclick="window.closeModals()" class="text-3xl text-gray-400 hover:text-gray-800">&times;</button></div>
             <input type="hidden" id="cli-id">
-            <select id="cli-tipo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 font-bold outline-none" onchange="window.toggleVoucher()">
+            <select id="cli-tipo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 font-bold outline-none text-gray-700" onchange="window.toggleVoucher()">
                 <option value="Cliente">Cliente</option>
                 <option value="Colaborador">Colaborador</option>
             </select>
-            <input type="text" id="cli-nome" placeholder="Nome Completo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none">
-            <input type="text" id="cli-telefone" placeholder="Telefone/WhatsApp" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none">
+            <input type="text" id="cli-nome" placeholder="Nome Completo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none font-bold text-gray-800">
+            <input type="text" id="cli-telefone" placeholder="Telefone/WhatsApp" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none text-gray-700">
             
             <div id="cli-voucher-container" class="hidden mb-6 bg-purple-50 p-4 rounded-2xl border border-purple-100">
                 <label class="text-xs font-black text-purple-500 uppercase">Limite Mensal do Voucher (R$)</label>
@@ -265,7 +265,7 @@
                 <p class="text-[10px] text-gray-500 mt-2">*O sistema controlará os gastos dele no PDV.</p>
             </div>
 
-            <button id="btn-save-client" class="w-full theme-bg text-white py-4 rounded-2xl font-black shadow-xl">Salvar</button>
+            <button id="btn-save-client" class="w-full theme-bg text-white py-4 rounded-2xl font-black shadow-xl hover:opacity-90 transition">Salvar Cadastro</button>
         </div>
     </div>
 
@@ -273,29 +273,31 @@
         <div class="bg-white rounded-[2.5rem] w-full max-w-2xl p-8 shadow-2xl flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center mb-4">
                 <div>
-                    <h3 class="text-2xl font-black text-gray-800" id="hist-nome">Nome</h3>
-                    <p class="text-gray-500 font-bold">Total Gasto: <span id="hist-total" class="text-green-600">R$ 0,00</span></p>
+                    <h3 class="text-2xl font-black text-gray-800 uppercase" id="hist-nome">Nome</h3>
+                    <p class="text-gray-500 font-bold">Total Gasto no Período: <span id="hist-total" class="text-green-600 font-black">R$ 0,00</span></p>
                 </div>
-                <button onclick="window.closeModals()" class="text-3xl text-gray-400">&times;</button>
+                <button onclick="window.closeModals()" class="text-3xl text-gray-400 hover:text-gray-800">&times;</button>
             </div>
-            <div class="flex gap-2 mb-4 bg-gray-50 p-2 rounded-2xl">
-                <input type="date" id="hist-data-inicio" class="p-2 border rounded-xl outline-none text-sm w-full">
-                <input type="date" id="hist-data-fim" class="p-2 border rounded-xl outline-none text-sm w-full">
-                <button onclick="window.loadClientHistory()" class="bg-blue-500 text-white px-4 rounded-xl font-bold">Filtrar</button>
+            <div class="flex flex-wrap md:flex-nowrap gap-2 mb-4 bg-gray-50 p-3 rounded-2xl border border-gray-100 items-center">
+                <span class="text-xs font-bold text-gray-400 uppercase">De:</span>
+                <input type="date" id="hist-data-inicio" class="p-3 border rounded-xl outline-none text-sm w-full font-bold text-gray-700">
+                <span class="text-xs font-bold text-gray-400 uppercase">Até:</span>
+                <input type="date" id="hist-data-fim" class="p-3 border rounded-xl outline-none text-sm w-full font-bold text-gray-700">
+                <button onclick="window.loadClientHistory()" class="bg-blue-500 hover:bg-blue-600 transition text-white px-6 py-3 rounded-xl font-black shadow-md flex items-center gap-2"><i class="ph ph-funnel text-lg"></i> Filtrar</button>
             </div>
-            <div id="hist-lista" class="flex-1 overflow-y-auto mb-4 border rounded-2xl p-4 bg-gray-50 hide-scrollbar flex flex-col gap-2"></div>
+            <div id="hist-lista" class="flex-1 overflow-y-auto mb-4 p-2 bg-white hide-scrollbar flex flex-col gap-3"></div>
         </div>
     </div>
 
     <div id="modal-combo" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
         <div class="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl">
-            <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black">Criar Combo</h3><button onclick="window.closeModals()" class="text-3xl">&times;</button></div>
-            <input type="text" id="combo-nome" placeholder="Nome do Combo (Ex: Café + Pão de Queijo)" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none font-bold">
-            <input type="text" id="combo-imagem" placeholder="Link da Imagem do Combo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none">
-            <input type="number" step="0.01" id="combo-preco" placeholder="Preço Final do Combo (R$)" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none font-bold text-green-600">
-            <p class="text-xs font-bold text-gray-400 mb-2">Selecione os produtos que fazem parte:</p>
-            <div id="combo-produtos-lista" class="max-h-40 overflow-y-auto border p-3 rounded-2xl bg-gray-50 mb-4 flex flex-col gap-2 hide-scrollbar"></div>
-            <button id="btn-save-combo" class="w-full theme-bg text-white py-4 rounded-2xl font-black shadow-xl">Salvar Combo</button>
+            <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black text-gray-800">Criar Combo</h3><button onclick="window.closeModals()" class="text-3xl text-gray-400 hover:text-gray-800">&times;</button></div>
+            <input type="text" id="combo-nome" placeholder="Nome do Combo (Ex: Café + Pão)" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none font-bold text-gray-800">
+            <input type="text" id="combo-imagem" placeholder="Link da Imagem do Combo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none text-sm">
+            <input type="number" step="0.01" id="combo-preco" placeholder="Preço Final do Combo (R$)" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none font-black text-green-600">
+            <p class="text-xs font-bold text-gray-400 mb-2 uppercase">Selecione os produtos que compõem o combo:</p>
+            <div id="combo-produtos-lista" class="max-h-40 overflow-y-auto border border-gray-200 p-3 rounded-2xl bg-gray-50 mb-6 flex flex-col gap-2 hide-scrollbar"></div>
+            <button id="btn-save-combo" class="w-full theme-bg text-white py-4 rounded-2xl font-black shadow-xl hover:opacity-90 transition">Salvar Combo</button>
         </div>
     </div>
 
