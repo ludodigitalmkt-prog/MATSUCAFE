@@ -777,6 +777,30 @@ window.closeModals = () => {
     document.querySelectorAll('input:not([type="date"])').forEach(i => i.value = '');
 };
 
+window.renovarVouchers = async () => {
+    if(confirm("ATENÇÃO: Isso vai restaurar o saldo de voucher de TODOS os colaboradores para o limite máximo original. Deseja realizar a Virada de Mês?")) {
+        
+        let atualizados = 0;
+        
+        // Percorre todos os clientes salvos no sistema
+        clients.forEach(async (c) => {
+            if(c.tipo === 'Colaborador' && c.voucher > 0) {
+                // Atualiza o saldo_voucher para voltar a ser igual ao limite máximo (voucher)
+                await updateDoc(doc(db, "clientes", c.id), { 
+                    saldo_voucher: parseFloat(c.voucher) 
+                });
+                atualizados++;
+            }
+        });
+        
+        if (atualizados > 0) {
+            alert("Virada de mês concluída! Todos os limites foram renovados.");
+        } else {
+            alert("Sucesso! Porém, nenhum colaborador com limite foi encontrado.");
+        }
+    }
+};
+
 window.openProductModal = (p = null) => {
     document.getElementById('modal-produto').classList.remove('hidden');
     document.getElementById('edit-id').value = p ? p.id : '';
