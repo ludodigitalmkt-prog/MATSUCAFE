@@ -18,6 +18,9 @@ let currentDateFilter = new Date().toISOString().split('T')[0];
 let currentClientHistory = null;
 let appConfig = { nome: "Matsucafe", cnpj: "", endereco: "", telefone: "", msg: "Obrigado e volte sempre!", logo: "" };
 
+// Variável global para armazenar o resumo de pagamentos do dia
+window.dailyPaymentTotals = {};
+
 // ==========================================
 // TEMA E NAVEGAÇÃO
 // ==========================================
@@ -61,7 +64,7 @@ if(loginForm) {
 }
 
 // ==========================================
-// CONFIGURAÇÕES (Com alteração da Logo do Menu)
+// CONFIGURAÇÕES (Logo e Infos)
 // ==========================================
 function loadSettings() {
     onSnapshot(doc(db, "config", "loja"), (docSnap) => {
@@ -74,7 +77,6 @@ function loadSettings() {
             if(document.getElementById('cfg-msg')) document.getElementById('cfg-msg').value = appConfig.msg || '';
             if(document.getElementById('cfg-logo')) document.getElementById('cfg-logo').value = appConfig.logo || '';
             
-            // Atualiza a logo no menu lateral
             if(document.getElementById('sidebar-logo')) {
                 document.getElementById('sidebar-logo').src = appConfig.logo || 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=100&q=80';
             }
@@ -213,9 +215,6 @@ window.loadClientHistory = async () => {
 // ==========================================
 // ESTOQUE COM LOTES 
 // ==========================================
-// ==========================================
-// ESTOQUE COM LOTES (E ROLAGEM CORRIGIDA)
-// ==========================================
 async function loadProducts() {
     onSnapshot(collection(db, "produtos"), (snapshot) => {
         products = []; 
@@ -234,12 +233,11 @@ async function loadProducts() {
             if(quebraSelect) quebraSelect.innerHTML += `<option value="${p.id}">${p.nome} (${totalEstoque} disp.)</option>`;
         });
         
-        window.renderAdminProducts(); // Chama a função de renderizar a tabela
+        window.renderAdminProducts();
         buildCategoryTabs();
     });
 }
 
-// Função de renderizar a tabela e fazer a pesquisa funcionar
 window.renderAdminProducts = (searchTerm = '') => {
     const list = document.getElementById('admin-product-list'); 
     if(!list) return;
@@ -287,7 +285,6 @@ window.renderAdminProducts = (searchTerm = '') => {
     });
 };
 
-// Evento que ativa a barra de pesquisa
 const searchEstoqueInput = document.getElementById('search-estoque');
 if(searchEstoqueInput) searchEstoqueInput.addEventListener('input', (e) => window.renderAdminProducts(e.target.value));
 
@@ -315,6 +312,7 @@ if(btnSaveProduct) {
         window.closeModals();
     };
 }
+
 // ==========================================
 // COMBOS
 // ==========================================
@@ -364,7 +362,7 @@ if(btnSaveCombo) {
 }
 
 // ==========================================
-// QUEBRAS (Reaproveitando a Baixa de Lotes)
+// QUEBRAS
 // ==========================================
 async function loadQuebras() {
     onSnapshot(collection(db, "quebras"), (snapshot) => {
@@ -415,7 +413,6 @@ async function baixarEstoqueFIFO(produtoId, quantidadeParaBaixar) {
     let lotesAtuais = p.lotes || [];
     let qtdRestante = quantidadeParaBaixar;
     
-    // Organiza para tirar do lote que vence primeiro
     lotesAtuais.sort((a, b) => new Date(a.validade) - new Date(b.validade));
     
     for (let lote of lotesAtuais) {
@@ -435,7 +432,7 @@ async function baixarEstoqueFIFO(produtoId, quantidadeParaBaixar) {
 }
 
 // ==========================================
-// FINANCEIRO AVANÇADO (INJETANDO VOUCHER PAGO)
+// FINANCEIRO AVANÇADO E RELATÓRIOS
 // ==========================================
 const filtroData = document.getElementById('filtro-data');
 if(filtroData) {
@@ -444,6 +441,9 @@ if(filtroData) {
 }
 
 function initDashboard() {
+    // Reseta o resumo diário de formas de pagamento toda vez que o painel for atualizado
+    window.dailyPaymentTotals = {};
+
     onSnapshot(collection(db, "vendas"), (snapVendas) => {
         onSnapshot(collection(db, "vouchers_pendentes"), (snapVouchers) => {
             let totalVendas = 0; let totalCusto = 0; let pendenteTotal = 0;
@@ -452,12 +452,25 @@ function initDashboard() {
             
             if(history) history.innerHTML = '';
             if(vouchersList) vouchersList.innerHTML = '';
+            window.dailyPaymentTotals = {}; // Zera os totais das gavetas
 
             snapVendas.forEach(docSnap => {
                 const v = docSnap.data();
                 if(v.dataSimples === currentDateFilter) {
                     totalVendas += v.total;
                     totalCusto += v.custoTotal || 0; 
+                    
+                    // LÓGICA DE GAVETAS: Separação do dinheiro por forma de pagamento
+                    let metodo = v.pagamento;
+                    if (v.complemento > 0 && metodo.includes('Voucher +')) {
+                        // Pagamento Dividido (Voucher + Diferença)
+                        let compMethod = metodo.split('+')[1].trim();
+                        window.dailyPaymentTotals['Voucher'] = (window.dailyPaymentTotals['Voucher'] || 0) + (v.total - v.complemento);
+                        window.dailyPaymentTotals[compMethod] = (window.dailyPaymentTotals[compMethod] || 0) + v.complemento;
+                    } else {
+                        // Pagamento Integral em uma única forma
+                        window.dailyPaymentTotals[metodo] = (window.dailyPaymentTotals[metodo] || 0) + v.total;
+                    }
                     
                     if(history) {
                         const div = document.createElement('div');
@@ -488,29 +501,26 @@ function initDashboard() {
                         div.querySelector('.btn-receber').onclick = async () => {
                             if(confirm(`Confirmar recebimento financeiro de R$ ${pend.valor.toFixed(2)} referente a ${pend.colaborador}? O valor será injetado no caixa de hoje.`)) {
                                 
-                                // 1. Marca o voucher como pago
                                 await updateDoc(doc(db, "vouchers_pendentes", docSnap.id), { status: 'pago', dataPagamento: new Date().toISOString() });
                                 
-                                // 2. Devolve para o colaborador APENAS o valor que era do limite dele (Ignorando valores que foram para pendura)
                                 const c = clients.find(cli => cli.nome === pend.colaborador);
                                 if(c) {
                                     const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(pend.valorRestaurar || pend.valor);
                                     await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
                                 }
 
-                                // 3. INJETA O DINHEIRO NO CAIXA DO DIA ATUAL
                                 const nroPagamento = Math.floor(1000 + Math.random() * 9000);
                                 await addDoc(collection(db, "vendas"), {
                                     nroPedido: `PGTO-${nroPagamento}`, 
                                     total: pend.valor, 
-                                    custoTotal: 0, // O custo já foi debitado no dia da venda do produto
+                                    custoTotal: 0, 
                                     cliente: pend.colaborador, 
                                     pagamento: 'Recebimento Voucher', 
                                     cpf: '',
                                     complemento: 0,
                                     isVoucherPgto: true,
                                     data: serverTimestamp(), 
-                                    dataSimples: new Date().toISOString().split('T')[0], // Puxa pro dia que deu baixa
+                                    dataSimples: new Date().toISOString().split('T')[0], 
                                     itens: [{nome: `Pgto Voucher (Ref. #${pend.nroPedido})`, qty: 1, preco: pend.valor}]
                                 });
 
@@ -528,6 +538,49 @@ function initDashboard() {
             if(document.getElementById('dash-vouchers')) document.getElementById('dash-vouchers').innerText = `R$ ${pendenteTotal.toFixed(2)}`;
         });
     });
+}
+
+// Impressão do Relatório de Fechamento (Completo por Forma de Pagamento)
+const btnPrintDay = document.getElementById('btn-print-day');
+if(btnPrintDay) {
+    btnPrintDay.onclick = () => {
+        const printSec = document.getElementById('print-section');
+        if(!printSec) return alert("Erro: Container de impressão não encontrado.");
+        
+        // Monta dinamicamente a listagem das gavetas de pagamento
+        let formasPgtoHtml = '';
+        for (const [metodo, valor] of Object.entries(window.dailyPaymentTotals || {})) {
+            if (valor > 0) {
+                formasPgtoHtml += `<div class="receipt-item"><span>- ${metodo.toUpperCase()}:</span><span>R$ ${valor.toFixed(2)}</span></div>`;
+            }
+        }
+
+        // Se houver dados de pagamento, cria um cabeçalho para esse bloco
+        if(formasPgtoHtml !== '') {
+            formasPgtoHtml = `<div class="receipt-divider"></div><div style="text-align:center; font-weight:bold; margin-bottom:5px;">RESUMO POR PAGAMENTO</div>` + formasPgtoHtml;
+        }
+        
+        printSec.innerHTML = `
+            <div class="receipt-header">
+                <h2 class="receipt-title">FECHAMENTO CAIXA</h2>
+                <p class="receipt-info"><strong>DATA:</strong> ${currentDateFilter.split('-').reverse().join('/')}</p>
+            </div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-item"><span>ENTRADAS BRUTAS:</span><span>${document.getElementById('dash-revenue').innerText}</span></div>
+            ${formasPgtoHtml}
+            <div class="receipt-divider"></div>
+            <div class="receipt-item"><span>CUSTO (MERCADORIA):</span><span>${document.getElementById('dash-cost').innerText}</span></div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-total"><span>LUCRO LÍQUIDO:</span><span>${document.getElementById('dash-profit').innerText}</span></div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-item" style="margin-top: 15px;"><span>VOUCHERS PENDENTES:</span><span>${document.getElementById('dash-vouchers').innerText}</span></div>
+            <div class="receipt-footer" style="margin-top:40px;">
+                <p>___________________________________</p>
+                <p style="font-weight: bold; margin-top:5px;">VISTO GERÊNCIA</p>
+            </div>
+        `;
+        setTimeout(() => { window.print(); }, 300);
+    };
 }
 
 // ==========================================
@@ -561,7 +614,6 @@ function renderPdv(filtro) {
         let opacityClass = '';
         let bloqueado = false;
 
-        // Lógica Visual do Card Fosco e Esgotado
         if(!isCombo) {
             const totalEstoque = (p.lotes || []).reduce((acc, l) => acc + l.quantidade, 0);
             if (totalEstoque <= 0) {
@@ -643,7 +695,7 @@ if(btnCheckout) {
             if (cartTotal > saldoDisponivel) {
                 const diferenca = cartTotal - saldoDisponivel;
                 
-                let resposta = prompt(`O saldo de benefício (R$ ${saldoDisponivel.toFixed(2)}) não é suficiente.\nFalta R$ ${diferenca.toFixed(2)}.\n\nDigite a forma de pagamento (PIX, Dinheiro, Cartao) ou digite 'Pendura' para lançar a diferença no fechamento do mês:`);
+                let resposta = prompt(`O saldo de benefício (R$ ${saldoDisponivel.toFixed(2)}) não é suficiente.\nFalta R$ ${diferenca.toFixed(2)}.\n\nDigite a forma de pagamento (Ex: PIX, Dinheiro, Cartao) ou digite 'Pendura' para lançar a diferença no fechamento do mês:`);
                 
                 if (resposta === null || resposta.trim() === '') return alert('Venda cancelada! Forma de pagamento não informada.');
 
@@ -663,14 +715,13 @@ if(btnCheckout) {
                 await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: saldoDisponivel - cartTotal });
             }
 
-            // MÁGICA: Registra TODO o voucher usado nas contas a receber (para cobrar do financeiro depois)
             const totalParaOFinanceiroCobrar = valorVoucherUsado + valorDaDiferencaPendura;
             if (totalParaOFinanceiroCobrar > 0) {
                 await addDoc(collection(db, "vouchers_pendentes"), {
                     colaborador: clienteNome, 
                     colaboradorId: c.id, 
                     valor: totalParaOFinanceiroCobrar, 
-                    valorRestaurar: valorVoucherUsado, // Restaura só o que era limite dele
+                    valorRestaurar: valorVoucherUsado, 
                     status: 'pendente', 
                     nroPedido: nro, 
                     dataStr: dataAtualStr, 
@@ -695,7 +746,6 @@ if(btnCheckout) {
             data: serverTimestamp(), dataSimples: dataAtualStr, itens: cart.map(i => ({ nome: i.nome, qtd: i.qty, preco: i.preco }))
         });
 
-        // MÁGICA: Baixa de Estoque Real no Lote
         for(const item of cart) {
             if (item.isCombo) {
                 for(const sub of item.itens) {
@@ -741,34 +791,6 @@ if(btnCheckout) {
     };
 }
 
-// Impressão do Relatório Financeiro
-const btnPrintDay = document.getElementById('btn-print-day');
-if(btnPrintDay) {
-    btnPrintDay.onclick = () => {
-        const printSec = document.getElementById('print-section');
-        if(!printSec) return alert("Erro: Container de impressão não encontrado.");
-        
-        printSec.innerHTML = `
-            <div class="receipt-header">
-                <h2 class="receipt-title">FECHAMENTO CAIXA</h2>
-                <p class="receipt-info"><strong>DATA:</strong> ${currentDateFilter.split('-').reverse().join('/')}</p>
-            </div>
-            <div class="receipt-divider"></div>
-            <div class="receipt-item"><span>ENTRADAS BRUTAS:</span><span>${document.getElementById('dash-revenue').innerText}</span></div>
-            <div class="receipt-item"><span>CUSTO (MERCADORIA):</span><span>${document.getElementById('dash-cost').innerText}</span></div>
-            <div class="receipt-divider"></div>
-            <div class="receipt-total"><span>LUCRO LÍQUIDO:</span><span>${document.getElementById('dash-profit').innerText}</span></div>
-            <div class="receipt-divider"></div>
-            <div class="receipt-item" style="margin-top: 15px;"><span>VOUCHERS PENDENTES:</span><span>${document.getElementById('dash-vouchers').innerText}</span></div>
-            <div class="receipt-footer" style="margin-top:40px;">
-                <p>___________________________________</p>
-                <p style="font-weight: bold; margin-top:5px;">VISTO GERÊNCIA</p>
-            </div>
-        `;
-        setTimeout(() => { window.print(); }, 300);
-    };
-}
-
 // ==========================================
 // FUNÇÕES GLOBAIS DE MODAL E UI
 // ==========================================
@@ -782,10 +804,8 @@ window.renovarVouchers = async () => {
         
         let atualizados = 0;
         
-        // Percorre todos os clientes salvos no sistema
         clients.forEach(async (c) => {
             if(c.tipo === 'Colaborador' && c.voucher > 0) {
-                // Atualiza o saldo_voucher para voltar a ser igual ao limite máximo (voucher)
                 await updateDoc(doc(db, "clientes", c.id), { 
                     saldo_voucher: parseFloat(c.voucher) 
                 });
