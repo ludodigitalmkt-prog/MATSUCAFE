@@ -82,18 +82,24 @@
             </div>
         </main>
 
-        <main id="tab-menu" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
-            <div class="flex justify-between items-center mb-8">
+        <main id="tab-menu" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 z-20 overflow-hidden">
+            <div class="flex justify-between items-center mb-6 shrink-0">
                 <h2 class="text-3xl font-black text-gray-800">Controle de Estoque</h2>
-                <button onclick="window.openProductModal()" class="theme-bg text-white px-6 py-3 rounded-2xl font-bold shadow-lg">+ Novo Produto/Lote</button>
+                <div class="flex gap-4">
+                    <input type="text" id="search-estoque" placeholder="Buscar produto..." class="p-3 bg-white border border-gray-200 rounded-2xl w-64 shadow-sm outline-none font-bold text-gray-700">
+                    <button onclick="window.openProductModal()" class="theme-bg text-white px-6 py-3 rounded-2xl font-bold shadow-lg hover:opacity-90 transition">+ Novo Produto/Lote</button>
+                </div>
             </div>
-            <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-50 text-gray-400 text-xs uppercase font-black border-b border-gray-100">
-                        <tr><th class="p-5">Produto</th><th class="p-5">Categoria</th><th class="p-5">Estoque</th><th class="p-5">Vencimento (Lote mais próximo)</th><th class="p-5 text-right">Ações</th></tr>
-                    </thead>
-                    <tbody id="admin-product-list"></tbody>
-                </table>
+            
+            <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 flex-1 flex flex-col overflow-hidden relative">
+                <div class="overflow-y-auto flex-1 hide-scrollbar">
+                    <table class="w-full text-left relative">
+                        <thead class="bg-gray-50 text-gray-400 text-xs uppercase font-black sticky top-0 z-10 shadow-sm">
+                            <tr><th class="p-5">Produto</th><th class="p-5">Categoria</th><th class="p-5">Estoque</th><th class="p-5">Vencimento (Lote mais próximo)</th><th class="p-5 text-right">Ações</th></tr>
+                        </thead>
+                        <tbody id="admin-product-list"></tbody>
+                    </table>
+                </div>
             </div>
         </main>
 
