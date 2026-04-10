@@ -213,17 +213,15 @@ window.loadClientHistory = async () => {
 // ==========================================
 // ESTOQUE COM LOTES 
 // ==========================================
+// ==========================================
+// ESTOQUE COM LOTES (E ROLAGEM CORRIGIDA)
+// ==========================================
 async function loadProducts() {
     onSnapshot(collection(db, "produtos"), (snapshot) => {
         products = []; 
-        const list = document.getElementById('admin-product-list'); 
         const quebraSelect = document.getElementById('quebra-produto');
-        
-        if(list) list.innerHTML = ''; 
         if(quebraSelect) quebraSelect.innerHTML = '<option value="">Selecione o Produto</option>';
         
-        const hoje = new Date(); hoje.setHours(0,0,0,0);
-
         snapshot.forEach((docSnap) => {
             const p = { id: docSnap.id, ...docSnap.data() }; 
             if(p.estoque !== undefined && !p.lotes) {
@@ -233,47 +231,65 @@ async function loadProducts() {
             products.push(p);
 
             const totalEstoque = (p.lotes || []).reduce((acc, lote) => acc + lote.quantidade, 0);
-            const lotesComEstoque = (p.lotes || []).filter(l => l.quantidade > 0 && l.validade);
-            lotesComEstoque.sort((a, b) => new Date(a.validade) - new Date(b.validade));
-            const loteMaisProximo = lotesComEstoque[0];
-
-            let statusVencimentoHtml = '<span class="text-gray-400">Sem validade</span>';
-            if (loteMaisProximo) {
-                const dataValidade = new Date(loteMaisProximo.validade);
-                dataValidade.setHours(0,0,0,0);
-                const diffDias = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 3600 * 24));
-                const dataFormatada = loteMaisProximo.validade.split('-').reverse().join('/');
-
-                if (diffDias < 0) statusVencimentoHtml = `<span class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-black animate-pulse shadow-sm">VENCIDO (${dataFormatada})</span>`;
-                else if (diffDias <= 7) statusVencimentoHtml = `<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-black shadow-sm">Alerta: ${diffDias} dias (${dataFormatada})</span>`;
-                else if (diffDias <= 30) statusVencimentoHtml = `<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg text-xs font-bold shadow-sm">Vence em ${diffDias} dias</span>`;
-                else statusVencimentoHtml = `<span class="text-green-600 font-bold">${dataFormatada}</span>`;
-            }
-
-            if(list) {
-                const tr = document.createElement('tr'); 
-                tr.className = "border-b border-gray-50 hover:bg-gray-50 transition";
-                tr.innerHTML = `
-                    <td class="p-5 flex items-center gap-3"><img src="${p.imagem}" class="w-12 h-12 rounded-xl object-contain bg-white shadow-sm border border-gray-100 p-1">
-                        <div><span class="font-black text-gray-800 block">${p.nome}</span><span class="text-[10px] text-gray-400 font-bold uppercase">${(p.lotes || []).length} lote(s)</span></div>
-                    </td>
-                    <td class="p-5"><span class="bg-gray-100 px-3 py-1 rounded-lg text-xs font-bold border border-gray-200">${p.categoria}</span></td>
-                    <td class="p-5 font-black text-lg ${totalEstoque <= 5 ? 'text-red-500' : 'text-blue-600'}">${totalEstoque} un</td>
-                    <td class="p-5">${statusVencimentoHtml}</td>
-                    <td class="p-5 text-right flex justify-end gap-2">
-                        <button class="bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-add-lote" title="Add Lote/Editar"><i class="ph ph-pencil-simple text-lg"></i></button> 
-                        <button class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-del"><i class="ph ph-trash text-lg"></i></button>
-                    </td>
-                `;
-                tr.querySelector('.btn-add-lote').onclick = () => window.openProductModal(p);
-                tr.querySelector('.btn-del').onclick = async () => { if(confirm('Excluir produto e lotes permanentemente?')) await deleteDoc(doc(db, "produtos", p.id)); };
-                list.appendChild(tr); 
-            }
             if(quebraSelect) quebraSelect.innerHTML += `<option value="${p.id}">${p.nome} (${totalEstoque} disp.)</option>`;
         });
+        
+        window.renderAdminProducts(); // Chama a função de renderizar a tabela
         buildCategoryTabs();
     });
 }
+
+// Função de renderizar a tabela e fazer a pesquisa funcionar
+window.renderAdminProducts = (searchTerm = '') => {
+    const list = document.getElementById('admin-product-list'); 
+    if(!list) return;
+    list.innerHTML = '';
+    
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const filtered = products.filter(p => p.nome.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    filtered.forEach(p => {
+        const totalEstoque = (p.lotes || []).reduce((acc, lote) => acc + lote.quantidade, 0);
+        const lotesComEstoque = (p.lotes || []).filter(l => l.quantidade > 0 && l.validade);
+        lotesComEstoque.sort((a, b) => new Date(a.validade) - new Date(b.validade));
+        const loteMaisProximo = lotesComEstoque[0];
+
+        let statusVencimentoHtml = '<span class="text-gray-400">Sem validade</span>';
+        if (loteMaisProximo) {
+            const dataValidade = new Date(loteMaisProximo.validade);
+            dataValidade.setHours(0,0,0,0);
+            const diffDias = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 3600 * 24));
+            const dataFormatada = loteMaisProximo.validade.split('-').reverse().join('/');
+
+            if (diffDias < 0) statusVencimentoHtml = `<span class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-black animate-pulse shadow-sm">VENCIDO (${dataFormatada})</span>`;
+            else if (diffDias <= 7) statusVencimentoHtml = `<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-black shadow-sm">Alerta: ${diffDias} dias (${dataFormatada})</span>`;
+            else if (diffDias <= 30) statusVencimentoHtml = `<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg text-xs font-bold shadow-sm">Vence em ${diffDias} dias</span>`;
+            else statusVencimentoHtml = `<span class="text-green-600 font-bold">${dataFormatada}</span>`;
+        }
+
+        const tr = document.createElement('tr'); 
+        tr.className = "border-b border-gray-50 hover:bg-gray-50 transition";
+        tr.innerHTML = `
+            <td class="p-4 flex items-center gap-3"><img src="${p.imagem}" class="w-12 h-12 rounded-xl object-contain bg-white shadow-sm border border-gray-100 p-1">
+                <div><span class="font-black text-gray-800 block">${p.nome}</span><span class="text-[10px] text-gray-400 font-bold uppercase">${(p.lotes || []).length} lote(s)</span></div>
+            </td>
+            <td class="p-4"><span class="bg-gray-100 px-3 py-1 rounded-lg text-xs font-bold border border-gray-200">${p.categoria}</span></td>
+            <td class="p-4 font-black text-lg ${totalEstoque <= 5 ? 'text-red-500' : 'text-blue-600'}">${totalEstoque} un</td>
+            <td class="p-4">${statusVencimentoHtml}</td>
+            <td class="p-4 text-right flex justify-end gap-2">
+                <button class="bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-add-lote" title="Add Lote/Editar"><i class="ph ph-pencil-simple text-lg"></i></button> 
+                <button class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-del"><i class="ph ph-trash text-lg"></i></button>
+            </td>
+        `;
+        tr.querySelector('.btn-add-lote').onclick = () => window.openProductModal(p);
+        tr.querySelector('.btn-del').onclick = async () => { if(confirm('Excluir produto e lotes permanentemente?')) await deleteDoc(doc(db, "produtos", p.id)); };
+        list.appendChild(tr); 
+    });
+};
+
+// Evento que ativa a barra de pesquisa
+const searchEstoqueInput = document.getElementById('search-estoque');
+if(searchEstoqueInput) searchEstoqueInput.addEventListener('input', (e) => window.renderAdminProducts(e.target.value));
 
 const btnSaveProduct = document.getElementById('btn-save-product');
 if(btnSaveProduct) {
@@ -299,7 +315,6 @@ if(btnSaveProduct) {
         window.closeModals();
     };
 }
-
 // ==========================================
 // COMBOS
 // ==========================================
