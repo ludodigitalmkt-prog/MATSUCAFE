@@ -56,7 +56,13 @@
                         <option value="Avulso">Cliente Avulso</option>
                     </select>
                     <select id="pdv-pagamento" class="p-3 bg-gray-50 border rounded-xl font-bold text-gray-700 outline-none">
-                        <option value="Dinheiro">Dinheiro</option><option value="PIX">PIX</option><option value="Crédito">Crédito</option><option value="Débito">Débito</option><option value="Voucher">Voucher / Benefício</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                        <option value="PIX">PIX</option>
+                        <option value="Crédito">Crédito</option>
+                        <option value="Débito">Débito</option>
+                        <option value="Vale Alimentação">Vale Alimentação</option>
+                        <option value="Vale Refeição">Vale Refeição</option>
+                        <option value="Voucher">Voucher / Benefício</option>
                     </select>
                 </div>
             </header>
@@ -64,11 +70,11 @@
             <div id="product-grid" class="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 hide-scrollbar content-start"></div>
         </main>
 
-        <main id="tab-crm" class="hidden flex-1 flex flex-col h-full bg-gray-50 p-8 overflow-y-auto z-20">
-            <div class="flex justify-between items-center mb-8">
+        <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-black text-gray-800">Contatos e Colaboradores</h2>
                 <div class="flex gap-4">
                     <input type="text" id="search-cliente" placeholder="Pesquisar..." class="p-3 bg-white border rounded-2xl w-64 shadow-sm outline-none">
+                    <button onclick="window.renovarVouchers()" class="bg-purple-600 hover:bg-purple-700 transition text-white px-6 py-3 rounded-2xl font-bold shadow-lg flex items-center gap-2"><i class="ph ph-arrows-clockwise"></i> Virar o Mês</button>
                     <button onclick="window.openClientModal()" class="theme-bg text-white px-6 py-3 rounded-2xl font-bold shadow-lg">+ Novo Cadastro</button>
                 </div>
             </div>
