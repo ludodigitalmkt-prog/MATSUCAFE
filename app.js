@@ -441,6 +441,7 @@ if(filtroData) {
 }
 
 function initDashboard() {
+    // Reseta o resumo diário de formas de pagamento
     window.dailyPaymentTotals = {};
 
     onSnapshot(collection(db, "vendas"), (snapVendas) => {
@@ -459,6 +460,7 @@ function initDashboard() {
                     totalVendas += v.total;
                     totalCusto += v.custoTotal || 0; 
                     
+                    // LÓGICA DE GAVETAS: Separação do dinheiro por forma de pagamento
                     let metodo = v.pagamento;
                     if (v.complemento > 0 && metodo.includes('Voucher +')) {
                         let compMethod = metodo.split('+')[1].trim();
@@ -472,22 +474,25 @@ function initDashboard() {
                         const div = document.createElement('div');
                         div.className = "bg-white p-5 rounded-[1.5rem] border border-gray-100 flex justify-between items-center shadow-sm hover:shadow-md transition";
                         
-                        // NOVA INTERFACE COM BOTÃO DE IMPRIMIR
+                        // NOVA INTERFACE COM BOTÃO DE EDITAR E EXCLUIR INTELIGENTE
                         div.innerHTML = `
-                            <div class="flex-1"><p class="font-black text-gray-800 text-lg">${v.isVoucherPgto ? 'Entrada Voucher' : `Pedido #${v.nroPedido}`}</p><p class="text-xs text-gray-500 font-bold mt-1">${v.cliente} | Pgto: ${v.pagamento}</p></div>
+                            <div class="flex-1">
+                                <p class="font-black text-gray-800 text-lg">${v.isVoucherPgto ? 'Entrada Voucher' : `Pedido #${v.nroPedido}`}</p>
+                                <p class="text-xs text-gray-500 font-bold mt-1">${v.cliente} | Pgto: <span class="text-blue-500">${v.pagamento}</span></p>
+                            </div>
                             <div class="text-right mr-5"><p class="font-black text-green-600 text-xl">R$ ${v.total.toFixed(2)}</p></div>
                             <div class="flex gap-2">
                                 <button class="bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-print" title="Imprimir 2ª Via"><i class="ph ph-printer text-lg"></i></button>
-                                <button class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-delete" title="Excluir Venda"><i class="ph ph-trash text-lg"></i></button>
+                                <button class="bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-edit" title="Editar Pagamento"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                <button class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-delete" title="Excluir Venda e Estornar Estoque"><i class="ph ph-trash text-lg"></i></button>
                             </div>
                         `;
 
-                        // FUNÇÃO DO NOVO BOTÃO DE IMPRIMIR 2ª VIA
+                        // 1. FUNÇÃO IMPRIMIR 2ª VIA
                         div.querySelector('.btn-print').onclick = () => {
                             let cupomItems = '';
                             if(v.itens && Array.isArray(v.itens)) {
                                 v.itens.forEach(i => {
-                                    // Puxa a quantidade correta do histórico
                                     const qtde = i.qty || i.qtd || 1; 
                                     cupomItems += `<div class="receipt-item"><span>${qtde}x ${i.nome}</span><span>R$ ${(i.preco * qtde).toFixed(2)}</span></div>`;
                                 });
@@ -524,13 +529,73 @@ function initDashboard() {
                             }
                         };
 
-                        // FUNÇÃO DE EXCLUIR (Já existia)
-                        div.querySelector('.btn-delete').onclick = async () => { if(confirm('Atenção: Excluir esta transação? O valor sumirá do financeiro.')) await deleteDoc(doc(db, "vendas", docSnap.id)); };
+                        // 2. FUNÇÃO EDITAR PAGAMENTO (Correção de Lançamento)
+                        div.querySelector('.btn-edit').onclick = async () => {
+                            const novoPgto = prompt(`Forma de pagamento atual: ${v.pagamento}\n\nDigite a nova forma de pagamento correta (Ex: Crédito, Débito, PIX, Dinheiro):`, v.pagamento);
+                            if(novoPgto && novoPgto.trim() !== "" && novoPgto !== v.pagamento) {
+                                await updateDoc(doc(db, "vendas", docSnap.id), { pagamento: novoPgto.trim() });
+                                alert("Forma de pagamento atualizada com sucesso!");
+                            }
+                        };
+
+                        // 3. FUNÇÃO EXCLUIR VENDA E DEVOLVER PRODUTO PRO ESTOQUE
+                        div.querySelector('.btn-delete').onclick = async () => {
+                            if(confirm('⚠️ ATENÇÃO: Deseja realmente excluir esta venda?\n\n- O valor será removido do caixa financeiro.\n- Os produtos serão devolvidos ao estoque.')) {
+                                
+                                // Processo de Estorno de Estoque
+                                if(v.itens && Array.isArray(v.itens)) {
+                                    for(const item of v.itens) {
+                                        const qtdeComprada = item.qty || item.qtd || 1;
+                                        
+                                        // Função auxiliar para injetar o estoque de volta no Firebase
+                                        const processarEstorno = async (nomeProd, qtde) => {
+                                            const pQuery = query(collection(db, "produtos"), where("nome", "==", nomeProd));
+                                            const pSnap = await getDocs(pQuery);
+                                            if (!pSnap.empty) {
+                                                const pDoc = pSnap.docs[0];
+                                                const pData = pDoc.data();
+                                                let lotesAtuais = pData.lotes || [];
+                                                
+                                                // Cria um lote especial de devolução para ficar auditável
+                                                lotesAtuais.push({
+                                                    id_lote: `estorno_${Date.now()}`,
+                                                    tipo: 'Estorno de Venda',
+                                                    quantidade: qtde,
+                                                    data_entrada: new Date().toISOString().split('T')[0],
+                                                    validade: '' // Fica sem validade específica por ser devolução de balcão
+                                                });
+                                                
+                                                const novoEstoqueTotal = lotesAtuais.reduce((acc, l) => acc + l.quantidade, 0);
+                                                await updateDoc(doc(db, "produtos", pDoc.id), { lotes: lotesAtuais, estoque_total: novoEstoqueTotal });
+                                            }
+                                        };
+
+                                        // Verifica se o item vendido foi um Combo (para devolver as peças) ou um produto normal
+                                        const cQuery = query(collection(db, "combos"), where("nome", "==", item.nome));
+                                        const cSnap = await getDocs(cQuery);
+                                        if (!cSnap.empty) {
+                                            const comboData = cSnap.docs[0].data();
+                                            for (const subItem of comboData.itens) {
+                                                await processarEstorno(subItem.nome, qtdeComprada);
+                                            }
+                                        } else {
+                                            await processarEstorno(item.nome, qtdeComprada);
+                                        }
+                                    }
+                                }
+                                
+                                // Remove o documento da venda e limpa o caixa
+                                await deleteDoc(doc(db, "vendas", docSnap.id));
+                                alert("Venda excluída e produtos estornados para o estoque com sucesso!");
+                            }
+                        };
+
                         history.appendChild(div);
                     }
                 }
             });
 
+            // Tratamento das baixas de Vouchers Pendentes
             snapVouchers.forEach(docSnap => {
                 const pend = docSnap.data();
                 if(pend.status === 'pendente') {
