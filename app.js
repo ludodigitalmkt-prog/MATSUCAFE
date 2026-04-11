@@ -441,7 +441,6 @@ if(filtroData) {
 }
 
 function initDashboard() {
-    // Reseta o resumo diário de formas de pagamento toda vez que o painel for atualizado
     window.dailyPaymentTotals = {};
 
     onSnapshot(collection(db, "vendas"), (snapVendas) => {
@@ -452,7 +451,7 @@ function initDashboard() {
             
             if(history) history.innerHTML = '';
             if(vouchersList) vouchersList.innerHTML = '';
-            window.dailyPaymentTotals = {}; // Zera os totais das gavetas
+            window.dailyPaymentTotals = {}; 
 
             snapVendas.forEach(docSnap => {
                 const v = docSnap.data();
@@ -460,26 +459,72 @@ function initDashboard() {
                     totalVendas += v.total;
                     totalCusto += v.custoTotal || 0; 
                     
-                    // LÓGICA DE GAVETAS: Separação do dinheiro por forma de pagamento
                     let metodo = v.pagamento;
                     if (v.complemento > 0 && metodo.includes('Voucher +')) {
-                        // Pagamento Dividido (Voucher + Diferença)
                         let compMethod = metodo.split('+')[1].trim();
                         window.dailyPaymentTotals['Voucher'] = (window.dailyPaymentTotals['Voucher'] || 0) + (v.total - v.complemento);
                         window.dailyPaymentTotals[compMethod] = (window.dailyPaymentTotals[compMethod] || 0) + v.complemento;
                     } else {
-                        // Pagamento Integral em uma única forma
                         window.dailyPaymentTotals[metodo] = (window.dailyPaymentTotals[metodo] || 0) + v.total;
                     }
                     
                     if(history) {
                         const div = document.createElement('div');
                         div.className = "bg-white p-5 rounded-[1.5rem] border border-gray-100 flex justify-between items-center shadow-sm hover:shadow-md transition";
+                        
+                        // NOVA INTERFACE COM BOTÃO DE IMPRIMIR
                         div.innerHTML = `
                             <div class="flex-1"><p class="font-black text-gray-800 text-lg">${v.isVoucherPgto ? 'Entrada Voucher' : `Pedido #${v.nroPedido}`}</p><p class="text-xs text-gray-500 font-bold mt-1">${v.cliente} | Pgto: ${v.pagamento}</p></div>
                             <div class="text-right mr-5"><p class="font-black text-green-600 text-xl">R$ ${v.total.toFixed(2)}</p></div>
-                            <button class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-delete"><i class="ph ph-trash text-lg"></i></button>
+                            <div class="flex gap-2">
+                                <button class="bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-print" title="Imprimir 2ª Via"><i class="ph ph-printer text-lg"></i></button>
+                                <button class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-delete" title="Excluir Venda"><i class="ph ph-trash text-lg"></i></button>
+                            </div>
                         `;
+
+                        // FUNÇÃO DO NOVO BOTÃO DE IMPRIMIR 2ª VIA
+                        div.querySelector('.btn-print').onclick = () => {
+                            let cupomItems = '';
+                            if(v.itens && Array.isArray(v.itens)) {
+                                v.itens.forEach(i => {
+                                    // Puxa a quantidade correta do histórico
+                                    const qtde = i.qty || i.qtd || 1; 
+                                    cupomItems += `<div class="receipt-item"><span>${qtde}x ${i.nome}</span><span>R$ ${(i.preco * qtde).toFixed(2)}</span></div>`;
+                                });
+                            }
+
+                            const logoHtml = appConfig.logo ? `<img src="${appConfig.logo}" class="receipt-logo">` : '';
+                            const printSec = document.getElementById('print-section');
+                            if(printSec) {
+                                printSec.innerHTML = `
+                                    <div class="receipt-header">
+                                        ${logoHtml}
+                                        <h2 class="receipt-title">${appConfig.nome || 'Matsucafe'}</h2>
+                                        <p class="receipt-info">CNPJ: ${appConfig.cnpj || 'Não informado'}</p>
+                                        <p class="receipt-info">${appConfig.endereco || ''}</p>
+                                        <p class="receipt-info">${appConfig.telefone || ''}</p>
+                                    </div>
+                                    <div class="receipt-divider"></div>
+                                    <div style="text-align: left;">
+                                        <p class="receipt-info" style="font-weight:bold; text-align:center;">*** 2ª VIA DE RECIBO ***</p>
+                                        <p class="receipt-info"><strong>Pedido:</strong> #${v.nroPedido}</p>
+                                        <p class="receipt-info"><strong>Data original:</strong> ${v.dataSimples.split('-').reverse().join('/')}</p>
+                                        <p class="receipt-info"><strong>Cliente:</strong> ${v.cliente}</p>
+                                        ${v.cpf ? `<p class="receipt-info"><strong>CPF:</strong> ${v.cpf}</p>` : ''}
+                                        <p class="receipt-info"><strong>Pgto:</strong> ${v.pagamento}</p>
+                                    </div>
+                                    <div class="receipt-divider"></div>
+                                    <div>${cupomItems}</div>
+                                    <div class="receipt-divider"></div>
+                                    <div class="receipt-total"><span>TOTAL</span><span>R$ ${v.total.toFixed(2)}</span></div>
+                                    <div class="receipt-footer"><p>${appConfig.msg || 'Obrigado e volte sempre!'}</p></div>
+                                    <br>
+                                `;
+                                setTimeout(() => { window.print(); }, 300);
+                            }
+                        };
+
+                        // FUNÇÃO DE EXCLUIR (Já existia)
                         div.querySelector('.btn-delete').onclick = async () => { if(confirm('Atenção: Excluir esta transação? O valor sumirá do financeiro.')) await deleteDoc(doc(db, "vendas", docSnap.id)); };
                         history.appendChild(div);
                     }
@@ -494,7 +539,7 @@ function initDashboard() {
                         const div = document.createElement('div');
                         div.className = "bg-purple-50 p-5 rounded-[1.5rem] border border-purple-100 flex justify-between items-center shadow-sm hover:shadow-md transition";
                         div.innerHTML = `
-                            <div><p class="font-black text-purple-800 text-lg">${pend.colaborador}</p><p class="text-xs text-purple-500 font-bold mt-1">Ref: Pedido #${pend.nroPedido}</p></div>
+                            <div><p class="font-bold text-purple-800 text-lg">${pend.colaborador}</p><p class="text-xs text-purple-500 font-bold mt-1">Ref: Pedido #${pend.nroPedido}</p></div>
                             <div class="text-right mr-4"><p class="font-black text-purple-700 text-xl">R$ ${pend.valor.toFixed(2)}</p></div>
                             <button class="bg-green-500 hover:bg-green-600 transition text-white font-black text-sm px-4 py-3 rounded-xl shadow-md btn-receber"><i class="ph ph-check-circle"></i> Receber</button>
                         `;
