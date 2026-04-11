@@ -456,6 +456,9 @@ function initDashboard() {
             if(vouchersList) vouchersList.innerHTML = '';
             window.dailyPaymentTotals = {}; 
 
+            // ==========================================
+            // LADO ESQUERDO: VENDAS REALIZADAS
+            // ==========================================
             snapVendas.forEach(docSnap => {
                 const v = docSnap.data();
                 if(v.dataSimples === currentDateFilter) {
@@ -488,6 +491,7 @@ function initDashboard() {
                             </div>
                         `;
 
+                        // IMPRIMIR 2ª VIA DA VENDA
                         div.querySelector('.btn-print').onclick = () => {
                             let cupomItems = '';
                             if(v.itens && Array.isArray(v.itens)) {
@@ -528,16 +532,35 @@ function initDashboard() {
                             }
                         };
 
+                        // EDITAR PAGAMENTO DA VENDA E CORRIGIR VOUCHER
                         div.querySelector('.btn-edit').onclick = async () => {
                             const novoPgto = prompt(`Forma de pagamento atual: ${v.pagamento}\n\nDigite a nova forma de pagamento correta (Ex: Crédito, Débito, PIX, Dinheiro):`, v.pagamento);
                             if(novoPgto && novoPgto.trim() !== "" && novoPgto !== v.pagamento) {
+                                
+                                // Se a venda era Voucher e mudou para PIX/Dinheiro, apaga a dívida pendente
+                                if (v.pagamento.toLowerCase().includes('voucher') && !novoPgto.toLowerCase().includes('voucher')) {
+                                    const pendQuery = query(collection(db, "vouchers_pendentes"), where("nroPedido", "==", v.nroPedido));
+                                    const pendSnap = await getDocs(pendQuery);
+                                    if (!pendSnap.empty) {
+                                        const pendDoc = pendSnap.docs[0];
+                                        const pendData = pendDoc.data();
+                                        const c = clients.find(cli => cli.nome === pendData.colaborador);
+                                        if(c) { // Devolve limite
+                                            const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(pendData.valorRestaurar || pendData.valor);
+                                            await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
+                                        }
+                                        await deleteDoc(doc(db, "vouchers_pendentes", pendDoc.id));
+                                    }
+                                }
+                                
                                 await updateDoc(doc(db, "vendas", docSnap.id), { pagamento: novoPgto.trim() });
                                 alert("Forma de pagamento atualizada com sucesso!");
                             }
                         };
 
+                        // EXCLUIR VENDA (ESTORNA ESTOQUE E APAGA DÍVIDA DE VOUCHER SE HOUVER)
                         div.querySelector('.btn-delete').onclick = async () => {
-                            if(confirm('⚠️ ATENÇÃO: Deseja realmente excluir esta venda?\n\n- O valor será removido do caixa financeiro.\n- Os produtos serão devolvidos ao estoque.')) {
+                            if(confirm('⚠️ ATENÇÃO: Deseja realmente excluir esta venda?\n\n- O valor será removido do caixa.\n- Os produtos serão devolvidos ao estoque.')) {
                                 
                                 if(v.itens && Array.isArray(v.itens)) {
                                     for(const item of v.itens) {
@@ -576,6 +599,22 @@ function initDashboard() {
                                         }
                                     }
                                 }
+
+                                // Se a venda excluída era voucher, apaga a dívida pendente também
+                                if (v.pagamento.toLowerCase().includes('voucher')) {
+                                    const pendQuery = query(collection(db, "vouchers_pendentes"), where("nroPedido", "==", v.nroPedido));
+                                    const pendSnap = await getDocs(pendQuery);
+                                    if (!pendSnap.empty) {
+                                        const pendDoc = pendSnap.docs[0];
+                                        const pendData = pendDoc.data();
+                                        const c = clients.find(cli => cli.nome === pendData.colaborador);
+                                        if(c) {
+                                            const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(pendData.valorRestaurar || pendData.valor);
+                                            await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
+                                        }
+                                        await deleteDoc(doc(db, "vouchers_pendentes", pendDoc.id));
+                                    }
+                                }
                                 
                                 await deleteDoc(doc(db, "vendas", docSnap.id));
                                 alert("Venda excluída e produtos estornados para o estoque com sucesso!");
@@ -587,18 +626,99 @@ function initDashboard() {
                 }
             });
 
+            // ==========================================
+            // LADO DIREITO: VOUCHERS PENDENTES
+            // ==========================================
             snapVouchers.forEach(docSnap => {
                 const pend = docSnap.data();
                 if(pend.status === 'pendente') {
                     pendenteTotal += pend.valor;
                     if(vouchersList) {
                         const div = document.createElement('div');
-                        div.className = "bg-purple-50 p-5 rounded-[1.5rem] border border-purple-100 flex justify-between items-center shadow-sm hover:shadow-md transition";
+                        div.className = "bg-purple-50 p-5 rounded-[1.5rem] border border-purple-100 flex flex-col xl:flex-row justify-between items-start xl:items-center shadow-sm hover:shadow-md transition gap-4";
+                        
                         div.innerHTML = `
-                            <div><p class="font-bold text-purple-800 text-lg">${pend.colaborador}</p><p class="text-xs text-purple-500 font-bold mt-1">Ref: Pedido #${pend.nroPedido}</p></div>
-                            <div class="text-right mr-4"><p class="font-black text-purple-700 text-xl">R$ ${pend.valor.toFixed(2)}</p></div>
-                            <button class="bg-green-500 hover:bg-green-600 transition text-white font-black text-sm px-4 py-3 rounded-xl shadow-md btn-receber"><i class="ph ph-check-circle"></i> Receber</button>
+                            <div class="flex-1">
+                                <p class="font-bold text-purple-800 text-lg">${pend.colaborador}</p>
+                                <p class="text-xs text-purple-500 font-bold mt-1">Ref: Pedido #${pend.nroPedido}</p>
+                            </div>
+                            <div class="text-left xl:text-right mr-2">
+                                <p class="font-black text-purple-700 text-2xl">R$ ${pend.valor.toFixed(2)}</p>
+                            </div>
+                            <div class="flex gap-2 w-full xl:w-auto justify-end">
+                                <button class="bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-print-voucher" title="Imprimir Recibo de Assinatura"><i class="ph ph-printer text-lg"></i></button>
+                                <button class="bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-edit-voucher" title="Corrigir Erro (Mudar Pagamento)"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                <button class="bg-green-500 hover:bg-green-600 transition text-white font-black text-sm px-5 py-3 rounded-xl shadow-md btn-receber flex items-center gap-2"><i class="ph ph-check-circle text-lg"></i> Baixa</button>
+                            </div>
                         `;
+
+                        // 1. IMPRIMIR RECIBO PARA ASSINATURA DO VOUCHER
+                        div.querySelector('.btn-print-voucher').onclick = () => {
+                            const logoHtml = appConfig.logo ? `<img src="${appConfig.logo}" class="receipt-logo">` : '';
+                            const printSec = document.getElementById('print-section');
+                            if(printSec) {
+                                printSec.innerHTML = `
+                                    <div class="receipt-header">
+                                        ${logoHtml}
+                                        <h2 class="receipt-title">${appConfig.nome || 'Matsucafe'}</h2>
+                                    </div>
+                                    <div class="receipt-divider"></div>
+                                    <div style="text-align: center;">
+                                        <p class="receipt-info" style="font-weight:bold; font-size: 14px;">COMPROVANTE DE VOUCHER</p>
+                                        <p class="receipt-info" style="font-weight:bold; font-size: 12px;">(PENDENTE DE DESCONTO)</p>
+                                    </div>
+                                    <div class="receipt-divider"></div>
+                                    <div style="text-align: left;">
+                                        <p class="receipt-info"><strong>Colaborador/Médico:</strong></p>
+                                        <p class="receipt-info" style="font-size: 14px; margin-bottom: 10px;">${pend.colaborador}</p>
+                                        <p class="receipt-info"><strong>Ref. Pedido:</strong> #${pend.nroPedido}</p>
+                                        <p class="receipt-info"><strong>Data:</strong> ${pend.dataStr.split('-').reverse().join('/')}</p>
+                                    </div>
+                                    <div class="receipt-divider"></div>
+                                    <div class="receipt-total"><span>VALOR CONSUMIDO</span><span>R$ ${pend.valor.toFixed(2)}</span></div>
+                                    <div class="receipt-footer">
+                                        <p style="margin-top: 40px;">___________________________________</p>
+                                        <p style="font-weight: bold; margin-top:5px;">ASSINATURA</p>
+                                    </div>
+                                    <br>
+                                `;
+                                setTimeout(() => { window.print(); }, 300);
+                            }
+                        };
+
+                        // 2. CORRIGIR ERRO (Mudar de Voucher para PIX/Dinheiro)
+                        div.querySelector('.btn-edit-voucher').onclick = async () => {
+                            const novoPgto = prompt(`Lançamento atual: VOUCHER PENDENTE\n\nSe foi um erro do caixa e o cliente pagou na hora, digite a forma correta (Ex: PIX, Cartão, Dinheiro):`);
+                            
+                            if(novoPgto && novoPgto.trim() !== "" && !novoPgto.toLowerCase().includes('voucher')) {
+                                if(confirm(`Mudar este lançamento para ${novoPgto.trim().toUpperCase()}?\n\n- O limite do colaborador será devolvido.\n- A venda ficará como Cliente Avulso na lista principal.`)) {
+                                    
+                                    // A. Devolver o limite do colaborador
+                                    const c = clients.find(cli => cli.nome === pend.colaborador);
+                                    if(c) {
+                                        const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(pend.valorRestaurar || pend.valor);
+                                        await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
+                                    }
+
+                                    // B. Atualizar a venda original (mudar pagamento e cliente para Avulso)
+                                    const vQuery = query(collection(db, "vendas"), where("nroPedido", "==", pend.nroPedido));
+                                    const vSnap = await getDocs(vQuery);
+                                    if(!vSnap.empty) {
+                                        const vendaRef = vSnap.docs[0];
+                                        await updateDoc(doc(db, "vendas", vendaRef.id), { 
+                                            pagamento: novoPgto.trim(),
+                                            cliente: "Cliente Avulso" // Joga pro caixa como venda normal
+                                        });
+                                    }
+
+                                    // C. Excluir a pendência de voucher
+                                    await deleteDoc(doc(db, "vouchers_pendentes", docSnap.id));
+                                    alert("Lançamento corrigido com sucesso! O valor já está no caixa geral.");
+                                }
+                            }
+                        };
+
+                        // 3. DAR BAIXA FINANCEIRA DO VOUCHER
                         div.querySelector('.btn-receber').onclick = async () => {
                             if(confirm(`Confirmar recebimento financeiro de R$ ${pend.valor.toFixed(2)} referente a ${pend.colaborador}? O valor será injetado no caixa de hoje.`)) {
                                 
@@ -628,6 +748,7 @@ function initDashboard() {
                                 alert('Baixa realizada! O valor entrou no caixa e o limite dele foi restaurado.');
                             }
                         };
+
                         vouchersList.appendChild(div);
                     }
                 }
@@ -640,7 +761,6 @@ function initDashboard() {
         });
     });
 }
-
 // Impressão do Relatório de Fechamento (Completo por Forma de Pagamento)
 const btnPrintDay = document.getElementById('btn-print-day');
 if(btnPrintDay) {
