@@ -18,8 +18,8 @@ let currentDateFilter = new Date().toISOString().split('T')[0];
 let currentClientHistory = null;
 let appConfig = { nome: "Matsucafe", cnpj: "", endereco: "", telefone: "", msg: "Obrigado e volte sempre!", logo: "" };
 
-// NOVA REGRA DE NEGÓCIO: Quem tem direito a Voucher
-const tiposComVoucher = ['Colaborador', 'Colaborador Interno', 'Médico'];
+// LÓGICA DE GESTÃO: Categorias que usam Saldo no PDV
+const tiposComVoucher = ['Colaborador', 'Colaborador Interno', 'Médico', 'Estagiário'];
 
 // ==========================================
 // TEMA E NAVEGAÇÃO
@@ -123,7 +123,6 @@ if(pdvClienteSelect) {
         const c = clients.find(cli => cli.nome === nome);
         const infoDiv = document.getElementById('pdv-voucher-info');
         
-        // Verifica se é qualquer um dos tipos com direito a Voucher
         if(c && tiposComVoucher.includes(c.tipo)) {
             const saldo = parseFloat(c.saldo_voucher !== undefined ? c.saldo_voucher : c.voucher || 0);
             document.getElementById('pdv-voucher-saldo').innerText = `R$ ${saldo.toFixed(2)}`;
@@ -145,7 +144,15 @@ function renderCRM(searchTerm = '') {
         const limiteReal = parseFloat(c.voucher || 0).toFixed(2);
         const saldoReal = parseFloat(c.saldo_voucher !== undefined ? c.saldo_voucher : c.voucher || 0).toFixed(2);
         
-        const limitInfo = isColab ? `<br><span class="text-[10px] text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded-md border border-purple-100 mt-1 inline-block">Limite: R$ ${limiteReal} | Restante: R$ ${saldoReal}</span>` : '';
+        let limitInfo = '';
+        if (isColab) {
+            if (c.tipo === 'Estagiário') {
+                limitInfo = `<br><span class="text-[10px] text-green-700 font-bold bg-green-50 px-2 py-1 rounded-md border border-green-200 mt-1 inline-block">Saldo: R$ ${saldoReal}</span>`;
+            } else {
+                limitInfo = `<br><span class="text-[10px] text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded-md border border-purple-100 mt-1 inline-block">Limite: R$ ${limiteReal} | Restante: R$ ${saldoReal}</span>`;
+            }
+        }
+
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-50 hover:bg-gray-50 transition cursor-pointer";
         tr.innerHTML = `
@@ -173,11 +180,14 @@ if(btnSaveClient) {
         const tipoSelecionado = document.getElementById('cli-tipo').value;
         const isColab = tiposComVoucher.includes(tipoSelecionado);
         
-        const valorVoucher = parseFloat(document.getElementById('cli-voucher').value || 0);
+        const valorVoucher = parseFloat(document.getElementById('cli-voucher').value || 0); // Limite Fixo
+        const inputSaldo = document.getElementById('cli-saldo-voucher').value; // Saldo Atual da Caixinha
+        const addSaldo = parseFloat(document.getElementById('cli-add-saldo').value || 0); // O que foi digitado pra somar
         
-        // Puxa o valor do campo de Saldo Atual (Se estiver vazio, puxa o limite)
-        const inputSaldo = document.getElementById('cli-saldo-voucher').value;
-        const valorSaldoAtual = inputSaldo !== '' ? parseFloat(inputSaldo) : valorVoucher;
+        let valorSaldoAtual = inputSaldo !== '' ? parseFloat(inputSaldo) : valorVoucher;
+        
+        // MÁGICA DA RECARGA: Soma o valor extra ao saldo atual
+        valorSaldoAtual += addSaldo;
 
         const data = {
             nome: document.getElementById('cli-nome').value, 
@@ -462,9 +472,6 @@ function initDashboard() {
             if(vouchersList) vouchersList.innerHTML = '';
             window.dailyPaymentTotals = {}; 
 
-            // ==========================================
-            // LADO ESQUERDO: VENDAS REALIZADAS
-            // ==========================================
             snapVendas.forEach(docSnap => {
                 const v = docSnap.data();
                 if(v.dataSimples === currentDateFilter) {
@@ -497,7 +504,6 @@ function initDashboard() {
                             </div>
                         `;
 
-                        // IMPRIMIR 2ª VIA DA VENDA
                         div.querySelector('.btn-print').onclick = () => {
                             let cupomItems = '';
                             if(v.itens && Array.isArray(v.itens)) {
@@ -538,12 +544,10 @@ function initDashboard() {
                             }
                         };
 
-                        // EDITAR PAGAMENTO DA VENDA E CORRIGIR VOUCHER
                         div.querySelector('.btn-edit').onclick = async () => {
                             const novoPgto = prompt(`Forma de pagamento atual: ${v.pagamento}\n\nDigite a nova forma de pagamento correta (Ex: Crédito, Débito, PIX, Dinheiro):`, v.pagamento);
                             if(novoPgto && novoPgto.trim() !== "" && novoPgto !== v.pagamento) {
                                 
-                                // Se a venda era Voucher e mudou para PIX/Dinheiro, apaga a dívida pendente
                                 if (v.pagamento.toLowerCase().includes('voucher') && !novoPgto.toLowerCase().includes('voucher')) {
                                     const pendQuery = query(collection(db, "vouchers_pendentes"), where("nroPedido", "==", v.nroPedido));
                                     const pendSnap = await getDocs(pendQuery);
@@ -551,7 +555,7 @@ function initDashboard() {
                                         const pendDoc = pendSnap.docs[0];
                                         const pendData = pendDoc.data();
                                         const c = clients.find(cli => cli.nome === pendData.colaborador);
-                                        if(c) { // Devolve limite
+                                        if(c) {
                                             const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(pendData.valorRestaurar || pendData.valor);
                                             await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
                                         }
@@ -564,7 +568,6 @@ function initDashboard() {
                             }
                         };
 
-                        // EXCLUIR VENDA (ESTORNA ESTOQUE E APAGA DÍVIDA DE VOUCHER SE HOUVER)
                         div.querySelector('.btn-delete').onclick = async () => {
                             if(confirm('⚠️ ATENÇÃO: Deseja realmente excluir esta venda?\n\n- O valor será removido do caixa.\n- Os produtos serão devolvidos ao estoque.')) {
                                 
@@ -606,7 +609,6 @@ function initDashboard() {
                                     }
                                 }
 
-                                // Se a venda excluída era voucher, apaga a dívida pendente também
                                 if (v.pagamento.toLowerCase().includes('voucher')) {
                                     const pendQuery = query(collection(db, "vouchers_pendentes"), where("nroPedido", "==", v.nroPedido));
                                     const pendSnap = await getDocs(pendQuery);
@@ -632,9 +634,6 @@ function initDashboard() {
                 }
             });
 
-            // ==========================================
-            // LADO DIREITO: VOUCHERS PENDENTES
-            // ==========================================
             snapVouchers.forEach(docSnap => {
                 const pend = docSnap.data();
                 if(pend.status === 'pendente') {
@@ -658,7 +657,6 @@ function initDashboard() {
                             </div>
                         `;
 
-                        // 1. IMPRIMIR RECIBO PARA ASSINATURA DO VOUCHER
                         div.querySelector('.btn-print-voucher').onclick = () => {
                             const logoHtml = appConfig.logo ? `<img src="${appConfig.logo}" class="receipt-logo">` : '';
                             const printSec = document.getElementById('print-section');
@@ -692,39 +690,34 @@ function initDashboard() {
                             }
                         };
 
-                        // 2. CORRIGIR ERRO (Mudar de Voucher para PIX/Dinheiro)
                         div.querySelector('.btn-edit-voucher').onclick = async () => {
                             const novoPgto = prompt(`Lançamento atual: VOUCHER PENDENTE\n\nSe foi um erro do caixa e o cliente pagou na hora, digite a forma correta (Ex: PIX, Cartão, Dinheiro):`);
                             
                             if(novoPgto && novoPgto.trim() !== "" && !novoPgto.toLowerCase().includes('voucher')) {
                                 if(confirm(`Mudar este lançamento para ${novoPgto.trim().toUpperCase()}?\n\n- O limite do colaborador será devolvido.\n- A venda ficará como Cliente Avulso na lista principal.`)) {
                                     
-                                    // A. Devolver o limite do colaborador
                                     const c = clients.find(cli => cli.nome === pend.colaborador);
                                     if(c) {
                                         const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(pend.valorRestaurar || pend.valor);
                                         await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
                                     }
 
-                                    // B. Atualizar a venda original (mudar pagamento e cliente para Avulso)
                                     const vQuery = query(collection(db, "vendas"), where("nroPedido", "==", pend.nroPedido));
                                     const vSnap = await getDocs(vQuery);
                                     if(!vSnap.empty) {
                                         const vendaRef = vSnap.docs[0];
                                         await updateDoc(doc(db, "vendas", vendaRef.id), { 
                                             pagamento: novoPgto.trim(),
-                                            cliente: "Cliente Avulso" // Joga pro caixa como venda normal
+                                            cliente: "Cliente Avulso" 
                                         });
                                     }
 
-                                    // C. Excluir a pendência de voucher
                                     await deleteDoc(doc(db, "vouchers_pendentes", docSnap.id));
                                     alert("Lançamento corrigido com sucesso! O valor já está no caixa geral.");
                                 }
                             }
                         };
 
-                        // 3. DAR BAIXA FINANCEIRA DO VOUCHER
                         div.querySelector('.btn-receber').onclick = async () => {
                             if(confirm(`Confirmar recebimento financeiro de R$ ${pend.valor.toFixed(2)} referente a ${pend.colaborador}? O valor será injetado no caixa de hoje.`)) {
                                 
@@ -767,6 +760,7 @@ function initDashboard() {
         });
     });
 }
+
 // Impressão do Relatório de Fechamento (Completo por Forma de Pagamento)
 const btnPrintDay = document.getElementById('btn-print-day');
 if(btnPrintDay) {
@@ -809,7 +803,7 @@ if(btnPrintDay) {
 }
 
 // ==========================================
-// PDV E EXIBIÇÃO DE ESTOQUE
+// PDV - EXIBINDO ESTOQUE E BLOQUEANDO ZERADOS
 // ==========================================
 function buildCategoryTabs() {
     const categorias = ["Todos", "Combos", ...new Set(products.map(p => p.categoria))];
@@ -893,7 +887,7 @@ function updateCart() {
 }
 
 // ==========================================
-// CHECKOUT
+// CHECKOUT COM VOUCHER MELHORADO
 // ==========================================
 const btnCheckout = document.getElementById('btn-checkout');
 if(btnCheckout) {
@@ -920,7 +914,7 @@ if(btnCheckout) {
             if (cartTotal > saldoDisponivel) {
                 const diferenca = cartTotal - saldoDisponivel;
                 
-                let resposta = prompt(`O saldo de benefício (R$ ${saldoDisponivel.toFixed(2)}) não é suficiente.\nFalta R$ ${diferenca.toFixed(2)}.\n\nDigite a forma de pagamento (Ex: PIX, Dinheiro, Cartao) ou digite 'Pendura' para lançar a diferença no fechamento do mês:`);
+                let resposta = prompt(`O saldo de benefício (R$ ${saldoDisponivel.toFixed(2)}) não é suficiente.\nFalta R$ ${diferenca.toFixed(2)}.\n\nDigite a forma de pagamento (PIX, Dinheiro, Cartao) ou digite 'Pendura' para lançar a diferença no fechamento do mês:`);
                 
                 if (resposta === null || resposta.trim() === '') return alert('Venda cancelada! Forma de pagamento não informada.');
 
@@ -1025,24 +1019,36 @@ window.closeModals = () => {
 };
 
 window.renovarVouchers = async () => {
-    if(confirm("ATENÇÃO: Isso vai restaurar o saldo de voucher de TODOS os colaboradores para o limite máximo original. Deseja realizar a Virada de Mês?")) {
+    if(confirm("ATENÇÃO: Isso vai restaurar o saldo de todos os Colaboradores/Médicos para o Limite Mensal e ZERAR o saldo dos Estagiários. Deseja realizar a Virada de Mês?")) {
         
         let atualizados = 0;
         
         clients.forEach(async (c) => {
-            // Verifica na lista de autorizados a ter Voucher
-            if(tiposComVoucher.includes(c.tipo) && c.voucher > 0) {
-                await updateDoc(doc(db, "clientes", c.id), { 
-                    saldo_voucher: parseFloat(c.voucher) 
-                });
-                atualizados++;
+            if(tiposComVoucher.includes(c.tipo)) {
+                let novoSaldo = 0;
+                let deveAtualizar = false;
+
+                if (c.tipo === 'Estagiário') {
+                    novoSaldo = 0; // Estagiário sempre zera
+                    deveAtualizar = true; 
+                } else if (c.voucher > 0) {
+                    novoSaldo = parseFloat(c.voucher); // Os outros voltam para o limite
+                    deveAtualizar = true;
+                }
+
+                if (deveAtualizar) {
+                    await updateDoc(doc(db, "clientes", c.id), { 
+                        saldo_voucher: novoSaldo 
+                    });
+                    atualizados++;
+                }
             }
         });
         
         if (atualizados > 0) {
-            alert("Virada de mês concluída! Todos os limites foram renovados.");
+            alert("Virada de mês concluída! Limites atualizados.");
         } else {
-            alert("Sucesso! Porém, nenhum colaborador/médico com limite foi encontrado.");
+            alert("Nenhum saldo foi modificado.");
         }
     }
 };
@@ -1069,13 +1075,13 @@ window.openProductModal = (p = null) => {
 window.openClientModal = (c = null) => {
     document.getElementById('modal-cliente').classList.remove('hidden');
     document.getElementById('cli-id').value = c ? c.id : '';
+    document.getElementById('cli-add-saldo').value = ''; // Sempre limpa o campo de soma
     
     if(c) {
         document.getElementById('cli-tipo').value = c.tipo; 
         document.getElementById('cli-nome').value = c.nome;
         document.getElementById('cli-telefone').value = c.telefone; 
         document.getElementById('cli-voucher').value = c.voucher || '';
-        // Mostra o saldo atual exato que a pessoa tem hoje na conta
         document.getElementById('cli-saldo-voucher').value = c.saldo_voucher !== undefined ? c.saldo_voucher : (c.voucher || '');
     } else { 
         document.getElementById('cli-tipo').value = 'Cliente'; 
@@ -1089,7 +1095,6 @@ window.toggleVoucher = () => {
     const tipo = document.getElementById('cli-tipo').value;
     const container = document.getElementById('cli-voucher-container');
     
-    // Mostra a caixinha de limite caso a pessoa seja Médico, Colab Interno ou Colab Clínica
     if (tiposComVoucher.includes(tipo)) {
         container.classList.remove('hidden'); container.classList.add('block');
     } else {
