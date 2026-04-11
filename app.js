@@ -172,18 +172,24 @@ if(btnSaveClient) {
         const id = document.getElementById('cli-id').value;
         const tipoSelecionado = document.getElementById('cli-tipo').value;
         const isColab = tiposComVoucher.includes(tipoSelecionado);
+        
         const valorVoucher = parseFloat(document.getElementById('cli-voucher').value || 0);
+        
+        // Puxa o valor do campo de Saldo Atual (Se estiver vazio, puxa o limite)
+        const inputSaldo = document.getElementById('cli-saldo-voucher').value;
+        const valorSaldoAtual = inputSaldo !== '' ? parseFloat(inputSaldo) : valorVoucher;
 
         const data = {
             nome: document.getElementById('cli-nome').value, 
             telefone: document.getElementById('cli-telefone').value,
             tipo: tipoSelecionado, 
-            voucher: isColab ? valorVoucher : 0
+            voucher: isColab ? valorVoucher : 0,
+            saldo_voucher: isColab ? valorSaldoAtual : 0
         };
-        
-        if(!id) data.saldo_voucher = data.voucher;
 
-        if(id) await updateDoc(doc(db, "clientes", id), data); else await addDoc(collection(db, "clientes"), data);
+        if(id) await updateDoc(doc(db, "clientes", id), data); 
+        else await addDoc(collection(db, "clientes"), data);
+        
         window.closeModals();
     };
 }
@@ -1063,10 +1069,19 @@ window.openProductModal = (p = null) => {
 window.openClientModal = (c = null) => {
     document.getElementById('modal-cliente').classList.remove('hidden');
     document.getElementById('cli-id').value = c ? c.id : '';
+    
     if(c) {
-        document.getElementById('cli-tipo').value = c.tipo; document.getElementById('cli-nome').value = c.nome;
-        document.getElementById('cli-telefone').value = c.telefone; document.getElementById('cli-voucher').value = c.voucher || '';
-    } else { document.getElementById('cli-tipo').value = 'Cliente'; }
+        document.getElementById('cli-tipo').value = c.tipo; 
+        document.getElementById('cli-nome').value = c.nome;
+        document.getElementById('cli-telefone').value = c.telefone; 
+        document.getElementById('cli-voucher').value = c.voucher || '';
+        // Mostra o saldo atual exato que a pessoa tem hoje na conta
+        document.getElementById('cli-saldo-voucher').value = c.saldo_voucher !== undefined ? c.saldo_voucher : (c.voucher || '');
+    } else { 
+        document.getElementById('cli-tipo').value = 'Cliente'; 
+        document.getElementById('cli-voucher').value = '';
+        document.getElementById('cli-saldo-voucher').value = '';
+    }
     window.toggleVoucher();
 };
 
