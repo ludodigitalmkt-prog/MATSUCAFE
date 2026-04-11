@@ -18,7 +18,7 @@ let currentDateFilter = new Date().toISOString().split('T')[0];
 let currentClientHistory = null;
 let appConfig = { nome: "Matsucafe", cnpj: "", endereco: "", telefone: "", msg: "Obrigado e volte sempre!", logo: "" };
 
-// LÓGICA DE GESTÃO: Categorias que usam Saldo no PDV
+// NOVA REGRA DE NEGÓCIO: Quem tem direito a Voucher
 const tiposComVoucher = ['Colaborador', 'Colaborador Interno', 'Médico', 'Estagiário'];
 
 // ==========================================
@@ -180,13 +180,12 @@ if(btnSaveClient) {
         const tipoSelecionado = document.getElementById('cli-tipo').value;
         const isColab = tiposComVoucher.includes(tipoSelecionado);
         
-        const valorVoucher = parseFloat(document.getElementById('cli-voucher').value || 0); // Limite Fixo
-        const inputSaldo = document.getElementById('cli-saldo-voucher').value; // Saldo Atual da Caixinha
-        const addSaldo = parseFloat(document.getElementById('cli-add-saldo').value || 0); // O que foi digitado pra somar
+        const valorVoucher = parseFloat(document.getElementById('cli-voucher').value || 0); 
+        const inputSaldo = document.getElementById('cli-saldo-voucher').value; 
+        const addSaldo = parseFloat(document.getElementById('cli-add-saldo').value || 0); 
         
         let valorSaldoAtual = inputSaldo !== '' ? parseFloat(inputSaldo) : valorVoucher;
         
-        // MÁGICA DA RECARGA: Soma o valor extra ao saldo atual
         valorSaldoAtual += addSaldo;
 
         const data = {
@@ -204,6 +203,9 @@ if(btnSaveClient) {
     };
 }
 
+// ==========================================
+// HISTÓRICO COM EXTRATO
+// ==========================================
 window.loadClientHistory = async () => {
     if(!currentClientHistory) return;
     const inicio = document.getElementById('hist-data-inicio').value;
@@ -220,15 +222,96 @@ window.loadClientHistory = async () => {
         if(inicio && fim && (v.dataSimples < inicio || v.dataSimples > fim)) return; 
         
         total += v.total;
+
+        let itensStr = '';
+        if(v.itens) {
+            v.itens.forEach(i => {
+                const qtde = i.qty || i.qtd || 1;
+                itensStr += `<p class="text-xs text-gray-600 ml-2">- ${qtde}x ${i.nome} (R$ ${(i.preco * qtde).toFixed(2)})</p>`;
+            });
+        }
+
         lista.innerHTML += `
-            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 text-sm flex justify-between items-center shadow-sm">
-                <div><p class="font-black text-gray-800">Pedido #${v.nroPedido}</p><p class="text-xs text-gray-500 font-bold mt-1">${v.dataSimples.split('-').reverse().join('/')} - Pgto: ${v.pagamento}</p></div>
-                <div class="font-black text-green-600 text-lg">R$ ${v.total.toFixed(2)}</div>
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 text-sm shadow-sm flex flex-col gap-2">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-black text-gray-800">Pedido #${v.nroPedido}</p>
+                        <p class="text-xs text-gray-500 font-bold mt-1">${v.dataSimples.split('-').reverse().join('/')} - Pgto: ${v.pagamento}</p>
+                    </div>
+                    <div class="font-black text-green-600 text-lg">R$ ${v.total.toFixed(2)}</div>
+                </div>
+                ${itensStr ? `
+                <div class="mt-2 border-t pt-2 border-gray-200">
+                    <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Itens consumidos:</p>
+                    ${itensStr}
+                </div>` : ''}
             </div>
         `;
     });
     document.getElementById('hist-total').innerText = `R$ ${total.toFixed(2)}`;
     if(lista.innerHTML === '') lista.innerHTML = '<p class="text-gray-400 text-center text-sm p-4 font-bold">Nenhuma compra encontrada no período.</p>';
+};
+
+window.printClientHistory = async () => {
+    if(!currentClientHistory) return;
+    const inicio = document.getElementById('hist-data-inicio').value;
+    const fim = document.getElementById('hist-data-fim').value;
+    const q = query(collection(db, "vendas"), where("cliente", "==", currentClientHistory));
+    const snap = await getDocs(q);
+
+    let total = 0;
+    let reportHtml = '';
+
+    snap.forEach(doc => {
+        const v = doc.data();
+        if(inicio && fim && (v.dataSimples < inicio || v.dataSimples > fim)) return;
+        total += v.total;
+
+        let itemsHtml = '';
+        if(v.itens) {
+            v.itens.forEach(i => {
+                const qtde = i.qty || i.qtd || 1;
+                itemsHtml += `<div style="display:flex; justify-content:space-between; font-size:11px; margin-left:5px; color:#333;"><span>- ${qtde}x ${i.nome}</span><span>R$ ${(i.preco * qtde).toFixed(2)}</span></div>`;
+            });
+        }
+
+        reportHtml += `
+            <div style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #ccc;">
+                <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; margin-bottom: 3px;">
+                    <span>#${v.nroPedido} (${v.dataSimples.split('-').reverse().join('/')})</span>
+                    <span>R$ ${v.total.toFixed(2)}</span>
+                </div>
+                <div style="font-size: 10px; margin-bottom: 4px; color: #666;">Pgto: ${v.pagamento}</div>
+                ${itemsHtml}
+            </div>
+        `;
+    });
+
+    const logoHtml = appConfig.logo ? `<img src="${appConfig.logo}" class="receipt-logo">` : '';
+    const printSec = document.getElementById('print-section');
+    if(printSec) {
+        printSec.innerHTML = `
+            <div class="receipt-header">
+                ${logoHtml}
+                <h2 class="receipt-title">${appConfig.nome || 'Matsucafe'}</h2>
+            </div>
+            <div class="receipt-divider"></div>
+            <div style="text-align: center;">
+                <p class="receipt-info" style="font-weight:bold; font-size: 14px;">EXTRATO DE CONSUMO</p>
+                <p class="receipt-info" style="font-weight:bold; font-size: 14px;">${currentClientHistory}</p>
+                ${(inicio && fim) ? `<p class="receipt-info" style="font-size: 10px;">Período: ${inicio.split('-').reverse().join('/')} a ${fim.split('-').reverse().join('/')}</p>` : ''}
+            </div>
+            <div class="receipt-divider"></div>
+            ${reportHtml || '<p style="text-align:center; font-size:12px;">Nenhum consumo no período.</p>'}
+            <div class="receipt-total"><span>TOTAL GASTO:</span><span>R$ ${total.toFixed(2)}</span></div>
+            <div class="receipt-footer">
+                <p style="margin-top: 40px;">___________________________________</p>
+                <p style="font-weight: bold; margin-top:5px;">ASSINATURA</p>
+            </div>
+            <br>
+        `;
+        setTimeout(() => { window.print(); }, 300);
+    }
 };
 
 // ==========================================
@@ -657,7 +740,22 @@ function initDashboard() {
                             </div>
                         `;
 
-                        div.querySelector('.btn-print-voucher').onclick = () => {
+                        // IMPRIMIR RECIBO DO VOUCHER COM ITENS DO BANCO DE DADOS
+                        div.querySelector('.btn-print-voucher').onclick = async () => {
+                            const vQuery = query(collection(db, "vendas"), where("nroPedido", "==", pend.nroPedido));
+                            const vSnap = await getDocs(vQuery);
+                            let itensHtml = '';
+                            
+                            if(!vSnap.empty) {
+                                const vendaObj = vSnap.docs[0].data();
+                                if(vendaObj.itens) {
+                                    vendaObj.itens.forEach(i => {
+                                        const qtde = i.qty || i.qtd || 1;
+                                        itensHtml += `<div class="receipt-item"><span>${qtde}x ${i.nome}</span><span>R$ ${(i.preco * qtde).toFixed(2)}</span></div>`;
+                                    });
+                                }
+                            }
+
                             const logoHtml = appConfig.logo ? `<img src="${appConfig.logo}" class="receipt-logo">` : '';
                             const printSec = document.getElementById('print-section');
                             if(printSec) {
@@ -669,17 +767,18 @@ function initDashboard() {
                                     <div class="receipt-divider"></div>
                                     <div style="text-align: center;">
                                         <p class="receipt-info" style="font-weight:bold; font-size: 14px;">COMPROVANTE DE VOUCHER</p>
-                                        <p class="receipt-info" style="font-weight:bold; font-size: 12px;">(PENDENTE DE DESCONTO)</p>
                                     </div>
                                     <div class="receipt-divider"></div>
                                     <div style="text-align: left;">
-                                        <p class="receipt-info"><strong>Colaborador/Médico:</strong></p>
-                                        <p class="receipt-info" style="font-size: 14px; margin-bottom: 10px;">${pend.colaborador}</p>
+                                        <p class="receipt-info"><strong>Colaborador:</strong> ${pend.colaborador}</p>
                                         <p class="receipt-info"><strong>Ref. Pedido:</strong> #${pend.nroPedido}</p>
                                         <p class="receipt-info"><strong>Data:</strong> ${pend.dataStr.split('-').reverse().join('/')}</p>
                                     </div>
                                     <div class="receipt-divider"></div>
-                                    <div class="receipt-total"><span>VALOR CONSUMIDO</span><span>R$ ${pend.valor.toFixed(2)}</span></div>
+                                    <div style="text-align: center; font-weight: bold; font-size: 11px; margin-bottom: 5px;">ITENS CONSUMIDOS</div>
+                                    <div>${itensHtml || '<p style="text-align:center; font-size:11px;">Itens não encontrados.</p>'}</div>
+                                    <div class="receipt-divider"></div>
+                                    <div class="receipt-total"><span>VALOR TOTAL</span><span>R$ ${pend.valor.toFixed(2)}</span></div>
                                     <div class="receipt-footer">
                                         <p style="margin-top: 40px;">___________________________________</p>
                                         <p style="font-weight: bold; margin-top:5px;">ASSINATURA</p>
@@ -761,7 +860,6 @@ function initDashboard() {
     });
 }
 
-// Impressão do Relatório de Fechamento (Completo por Forma de Pagamento)
 const btnPrintDay = document.getElementById('btn-print-day');
 if(btnPrintDay) {
     btnPrintDay.onclick = () => {
@@ -887,7 +985,7 @@ function updateCart() {
 }
 
 // ==========================================
-// CHECKOUT COM VOUCHER MELHORADO
+// CHECKOUT
 // ==========================================
 const btnCheckout = document.getElementById('btn-checkout');
 if(btnCheckout) {
@@ -1029,10 +1127,10 @@ window.renovarVouchers = async () => {
                 let deveAtualizar = false;
 
                 if (c.tipo === 'Estagiário') {
-                    novoSaldo = 0; // Estagiário sempre zera
+                    novoSaldo = 0; 
                     deveAtualizar = true; 
                 } else if (c.voucher > 0) {
-                    novoSaldo = parseFloat(c.voucher); // Os outros voltam para o limite
+                    novoSaldo = parseFloat(c.voucher); 
                     deveAtualizar = true;
                 }
 
@@ -1075,7 +1173,7 @@ window.openProductModal = (p = null) => {
 window.openClientModal = (c = null) => {
     document.getElementById('modal-cliente').classList.remove('hidden');
     document.getElementById('cli-id').value = c ? c.id : '';
-    document.getElementById('cli-add-saldo').value = ''; // Sempre limpa o campo de soma
+    document.getElementById('cli-add-saldo').value = ''; 
     
     if(c) {
         document.getElementById('cli-tipo').value = c.tipo; 
