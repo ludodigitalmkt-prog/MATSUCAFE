@@ -265,17 +265,21 @@
         <div class="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl">
             <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black text-gray-800">Cadastro</h3><button onclick="window.closeModals()" class="text-3xl text-gray-400 hover:text-gray-800">&times;</button></div>
             <input type="hidden" id="cli-id">
+            
             <select id="cli-tipo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 font-bold outline-none text-gray-700" onchange="window.toggleVoucher()">
-                <option value="Cliente">Cliente</option>
-                <option value="Colaborador">Colaborador</option>
+                <option value="Cliente">Cliente Avulso</option>
+                <option value="Colaborador">Colaborador (Clínica)</option>
+                <option value="Colaborador Interno">Colaborador Interno (Cafeteria)</option>
+                <option value="Médico">Médico</option>
             </select>
+            
             <input type="text" id="cli-nome" placeholder="Nome Completo" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none font-bold text-gray-800">
             <input type="text" id="cli-telefone" placeholder="Telefone/WhatsApp" class="w-full p-4 bg-gray-50 border rounded-2xl mb-4 outline-none text-gray-700">
             
             <div id="cli-voucher-container" class="hidden mb-6 bg-purple-50 p-4 rounded-2xl border border-purple-100">
-                <label class="text-xs font-black text-purple-500 uppercase">Limite Mensal do Voucher (R$)</label>
+                <label class="text-xs font-black text-purple-500 uppercase">Limite Mensal do Voucher/Benefício (R$)</label>
                 <input type="number" step="0.01" id="cli-voucher" placeholder="Ex: 150.00" class="w-full p-3 bg-white mt-2 rounded-xl outline-none font-black text-purple-700">
-                <p class="text-[10px] text-gray-500 mt-2">*O sistema controlará os gastos dele no PDV.</p>
+                <p class="text-[10px] text-gray-500 mt-2">*O sistema controlará os gastos dessa pessoa no PDV.</p>
             </div>
 
             <button id="btn-save-client" class="w-full theme-bg text-white py-4 rounded-2xl font-black shadow-xl hover:opacity-90 transition">Salvar Cadastro</button>
