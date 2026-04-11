@@ -73,5 +73,8 @@ input, textarea {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
-    @page { margin: 0; size: auto; }
-}
+    /* Força o celular a reconhecer o formato de bobina 58mm ao invés de A4 */
+    @page {
+        margin: 0;
+        size: 58mm auto; /* 58mm de largura com altura infinita (bobina) */
+    }
