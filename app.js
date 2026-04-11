@@ -18,8 +18,8 @@ let currentDateFilter = new Date().toISOString().split('T')[0];
 let currentClientHistory = null;
 let appConfig = { nome: "Matsucafe", cnpj: "", endereco: "", telefone: "", msg: "Obrigado e volte sempre!", logo: "" };
 
-// Variável global para armazenar o resumo de pagamentos do dia
-window.dailyPaymentTotals = {};
+// NOVA REGRA DE NEGÓCIO: Quem tem direito a Voucher
+const tiposComVoucher = ['Colaborador', 'Colaborador Interno', 'Médico'];
 
 // ==========================================
 // TEMA E NAVEGAÇÃO
@@ -64,7 +64,7 @@ if(loginForm) {
 }
 
 // ==========================================
-// CONFIGURAÇÕES (Logo e Infos)
+// CONFIGURAÇÕES (Com alteração da Logo do Menu)
 // ==========================================
 function loadSettings() {
     onSnapshot(doc(db, "config", "loja"), (docSnap) => {
@@ -122,7 +122,9 @@ if(pdvClienteSelect) {
         const nome = e.target.value;
         const c = clients.find(cli => cli.nome === nome);
         const infoDiv = document.getElementById('pdv-voucher-info');
-        if(c && c.tipo === 'Colaborador') {
+        
+        // Verifica se é qualquer um dos tipos com direito a Voucher
+        if(c && tiposComVoucher.includes(c.tipo)) {
             const saldo = parseFloat(c.saldo_voucher !== undefined ? c.saldo_voucher : c.voucher || 0);
             document.getElementById('pdv-voucher-saldo').innerText = `R$ ${saldo.toFixed(2)}`;
             infoDiv.classList.remove('hidden');
@@ -139,7 +141,7 @@ function renderCRM(searchTerm = '') {
     const filtered = clients.filter(c => c.nome.toLowerCase().includes(searchTerm.toLowerCase()));
     
     filtered.forEach(c => {
-        const isColab = c.tipo === 'Colaborador';
+        const isColab = tiposComVoucher.includes(c.tipo);
         const limiteReal = parseFloat(c.voucher || 0).toFixed(2);
         const saldoReal = parseFloat(c.saldo_voucher !== undefined ? c.saldo_voucher : c.voucher || 0).toFixed(2);
         
@@ -168,13 +170,14 @@ const btnSaveClient = document.getElementById('btn-save-client');
 if(btnSaveClient) {
     btnSaveClient.onclick = async () => {
         const id = document.getElementById('cli-id').value;
-        const isColab = document.getElementById('cli-tipo').value === 'Colaborador';
+        const tipoSelecionado = document.getElementById('cli-tipo').value;
+        const isColab = tiposComVoucher.includes(tipoSelecionado);
         const valorVoucher = parseFloat(document.getElementById('cli-voucher').value || 0);
 
         const data = {
             nome: document.getElementById('cli-nome').value, 
             telefone: document.getElementById('cli-telefone').value,
-            tipo: document.getElementById('cli-tipo').value, 
+            tipo: tipoSelecionado, 
             voucher: isColab ? valorVoucher : 0
         };
         
@@ -213,7 +216,7 @@ window.loadClientHistory = async () => {
 };
 
 // ==========================================
-// ESTOQUE COM LOTES 
+// ESTOQUE COM LOTES E ROLAGEM CORRIGIDA
 // ==========================================
 async function loadProducts() {
     onSnapshot(collection(db, "produtos"), (snapshot) => {
@@ -233,7 +236,7 @@ async function loadProducts() {
             if(quebraSelect) quebraSelect.innerHTML += `<option value="${p.id}">${p.nome} (${totalEstoque} disp.)</option>`;
         });
         
-        window.renderAdminProducts();
+        window.renderAdminProducts(); 
         buildCategoryTabs();
     });
 }
@@ -441,7 +444,6 @@ if(filtroData) {
 }
 
 function initDashboard() {
-    // Reseta o resumo diário de formas de pagamento
     window.dailyPaymentTotals = {};
 
     onSnapshot(collection(db, "vendas"), (snapVendas) => {
@@ -460,7 +462,6 @@ function initDashboard() {
                     totalVendas += v.total;
                     totalCusto += v.custoTotal || 0; 
                     
-                    // LÓGICA DE GAVETAS: Separação do dinheiro por forma de pagamento
                     let metodo = v.pagamento;
                     if (v.complemento > 0 && metodo.includes('Voucher +')) {
                         let compMethod = metodo.split('+')[1].trim();
@@ -474,7 +475,6 @@ function initDashboard() {
                         const div = document.createElement('div');
                         div.className = "bg-white p-5 rounded-[1.5rem] border border-gray-100 flex justify-between items-center shadow-sm hover:shadow-md transition";
                         
-                        // NOVA INTERFACE COM BOTÃO DE EDITAR E EXCLUIR INTELIGENTE
                         div.innerHTML = `
                             <div class="flex-1">
                                 <p class="font-black text-gray-800 text-lg">${v.isVoucherPgto ? 'Entrada Voucher' : `Pedido #${v.nroPedido}`}</p>
@@ -488,7 +488,6 @@ function initDashboard() {
                             </div>
                         `;
 
-                        // 1. FUNÇÃO IMPRIMIR 2ª VIA
                         div.querySelector('.btn-print').onclick = () => {
                             let cupomItems = '';
                             if(v.itens && Array.isArray(v.itens)) {
@@ -529,7 +528,6 @@ function initDashboard() {
                             }
                         };
 
-                        // 2. FUNÇÃO EDITAR PAGAMENTO (Correção de Lançamento)
                         div.querySelector('.btn-edit').onclick = async () => {
                             const novoPgto = prompt(`Forma de pagamento atual: ${v.pagamento}\n\nDigite a nova forma de pagamento correta (Ex: Crédito, Débito, PIX, Dinheiro):`, v.pagamento);
                             if(novoPgto && novoPgto.trim() !== "" && novoPgto !== v.pagamento) {
@@ -538,16 +536,13 @@ function initDashboard() {
                             }
                         };
 
-                        // 3. FUNÇÃO EXCLUIR VENDA E DEVOLVER PRODUTO PRO ESTOQUE
                         div.querySelector('.btn-delete').onclick = async () => {
                             if(confirm('⚠️ ATENÇÃO: Deseja realmente excluir esta venda?\n\n- O valor será removido do caixa financeiro.\n- Os produtos serão devolvidos ao estoque.')) {
                                 
-                                // Processo de Estorno de Estoque
                                 if(v.itens && Array.isArray(v.itens)) {
                                     for(const item of v.itens) {
                                         const qtdeComprada = item.qty || item.qtd || 1;
                                         
-                                        // Função auxiliar para injetar o estoque de volta no Firebase
                                         const processarEstorno = async (nomeProd, qtde) => {
                                             const pQuery = query(collection(db, "produtos"), where("nome", "==", nomeProd));
                                             const pSnap = await getDocs(pQuery);
@@ -556,13 +551,12 @@ function initDashboard() {
                                                 const pData = pDoc.data();
                                                 let lotesAtuais = pData.lotes || [];
                                                 
-                                                // Cria um lote especial de devolução para ficar auditável
                                                 lotesAtuais.push({
                                                     id_lote: `estorno_${Date.now()}`,
                                                     tipo: 'Estorno de Venda',
                                                     quantidade: qtde,
                                                     data_entrada: new Date().toISOString().split('T')[0],
-                                                    validade: '' // Fica sem validade específica por ser devolução de balcão
+                                                    validade: '' 
                                                 });
                                                 
                                                 const novoEstoqueTotal = lotesAtuais.reduce((acc, l) => acc + l.quantidade, 0);
@@ -570,7 +564,6 @@ function initDashboard() {
                                             }
                                         };
 
-                                        // Verifica se o item vendido foi um Combo (para devolver as peças) ou um produto normal
                                         const cQuery = query(collection(db, "combos"), where("nome", "==", item.nome));
                                         const cSnap = await getDocs(cQuery);
                                         if (!cSnap.empty) {
@@ -584,7 +577,6 @@ function initDashboard() {
                                     }
                                 }
                                 
-                                // Remove o documento da venda e limpa o caixa
                                 await deleteDoc(doc(db, "vendas", docSnap.id));
                                 alert("Venda excluída e produtos estornados para o estoque com sucesso!");
                             }
@@ -595,7 +587,6 @@ function initDashboard() {
                 }
             });
 
-            // Tratamento das baixas de Vouchers Pendentes
             snapVouchers.forEach(docSnap => {
                 const pend = docSnap.data();
                 if(pend.status === 'pendente') {
@@ -657,7 +648,6 @@ if(btnPrintDay) {
         const printSec = document.getElementById('print-section');
         if(!printSec) return alert("Erro: Container de impressão não encontrado.");
         
-        // Monta dinamicamente a listagem das gavetas de pagamento
         let formasPgtoHtml = '';
         for (const [metodo, valor] of Object.entries(window.dailyPaymentTotals || {})) {
             if (valor > 0) {
@@ -665,7 +655,6 @@ if(btnPrintDay) {
             }
         }
 
-        // Se houver dados de pagamento, cria um cabeçalho para esse bloco
         if(formasPgtoHtml !== '') {
             formasPgtoHtml = `<div class="receipt-divider"></div><div style="text-align:center; font-weight:bold; margin-bottom:5px;">RESUMO POR PAGAMENTO</div>` + formasPgtoHtml;
         }
@@ -694,7 +683,7 @@ if(btnPrintDay) {
 }
 
 // ==========================================
-// PDV - EXIBINDO ESTOQUE E BLOQUEANDO ZERADOS
+// PDV E EXIBIÇÃO DE ESTOQUE
 // ==========================================
 function buildCategoryTabs() {
     const categorias = ["Todos", "Combos", ...new Set(products.map(p => p.categoria))];
@@ -778,7 +767,7 @@ function updateCart() {
 }
 
 // ==========================================
-// CHECKOUT COM VOUCHER MELHORADO
+// CHECKOUT
 // ==========================================
 const btnCheckout = document.getElementById('btn-checkout');
 if(btnCheckout) {
@@ -796,7 +785,7 @@ if(btnCheckout) {
         let formaPagamentoComplementar = '';
 
         if (pagamento === 'Voucher') {
-            if (!c || c.tipo !== 'Colaborador') return alert("Selecione um Colaborador válido para usar o Voucher!");
+            if (!c || !tiposComVoucher.includes(c.tipo)) return alert("Selecione um Colaborador ou Médico válido para usar o Voucher!");
             
             let saldoDisponivel = parseFloat(c.saldo_voucher !== undefined ? c.saldo_voucher : c.voucher || 0);
             let valorDaDiferencaPendura = 0;
@@ -915,7 +904,8 @@ window.renovarVouchers = async () => {
         let atualizados = 0;
         
         clients.forEach(async (c) => {
-            if(c.tipo === 'Colaborador' && c.voucher > 0) {
+            // Verifica na lista de autorizados a ter Voucher
+            if(tiposComVoucher.includes(c.tipo) && c.voucher > 0) {
                 await updateDoc(doc(db, "clientes", c.id), { 
                     saldo_voucher: parseFloat(c.voucher) 
                 });
@@ -926,7 +916,7 @@ window.renovarVouchers = async () => {
         if (atualizados > 0) {
             alert("Virada de mês concluída! Todos os limites foram renovados.");
         } else {
-            alert("Sucesso! Porém, nenhum colaborador com limite foi encontrado.");
+            alert("Sucesso! Porém, nenhum colaborador/médico com limite foi encontrado.");
         }
     }
 };
@@ -963,7 +953,9 @@ window.openClientModal = (c = null) => {
 window.toggleVoucher = () => {
     const tipo = document.getElementById('cli-tipo').value;
     const container = document.getElementById('cli-voucher-container');
-    if (tipo === 'Colaborador') {
+    
+    // Mostra a caixinha de limite caso a pessoa seja Médico, Colab Interno ou Colab Clínica
+    if (tiposComVoucher.includes(tipo)) {
         container.classList.remove('hidden'); container.classList.add('block');
     } else {
         container.classList.add('hidden'); container.classList.remove('block');
