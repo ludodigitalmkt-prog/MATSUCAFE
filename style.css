@@ -42,12 +42,21 @@ input, textarea {
 
     #print-section {
         display: block !important;
-        width: 80mm !important; /* Padrão exato de bobina térmica */
-        margin: 0 auto;
-        padding: 2mm 5mm 15mm 5mm; /* Margem extra no final para corte */
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        
+        /* MUDE AQUI PARA O TAMANHO DA SUA BOBINA */
+        width: 58mm !important; /* Se for a bobina pequena, use 58mm. Se for a grande, deixe 80mm */
+        
+        height: auto !important; 
+        overflow: visible !important;
+        margin: 0;
+        padding: 2mm;
+        padding-bottom: 20mm !important; 
         color: #000 !important;
-        font-family: 'Courier New', Courier, monospace; /* Fonte padrão de cupom */
-        font-size: 12px;
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: bold; 
     }
 
     /* Classes do Cupom Moderno */
