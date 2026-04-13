@@ -330,7 +330,28 @@
             <button id="btn-save-combo" class="w-full theme-bg text-white py-4 rounded-2xl font-black shadow-xl hover:opacity-90 transition">Salvar Combo</button>
         </div>
     </div>
+<div id="modal-pedido" class="hidden fixed inset-0 bg-black/60 z-[250] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 class="text-2xl font-black text-gray-800" id="detalhe-nro-pedido">Pedido #0000</h3>
+                    <p class="text-sm text-gray-500 font-bold" id="detalhe-cliente-info">Cliente: ---</p>
+                </div>
+                <button onclick="document.getElementById('modal-pedido').classList.add('hidden')" class="text-3xl text-gray-400 hover:text-gray-800">&times;</button>
+            </div>
+            
+            <div id="detalhe-lista-itens" class="flex-1 overflow-y-auto mb-4 p-2 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col gap-2 hide-scrollbar">
+                </div>
 
+            <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-black text-blue-800 uppercase">Total do Pedido:</span>
+                    <span class="text-xl font-black text-blue-900" id="detalhe-total-venda">R$ 0,00</span>
+                </div>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-3 text-center">* Ao excluir um item, o valor é recalculado e o estoque é devolvido.</p>
+        </div>
+    </div>
     <div id="print-section" class="hidden"></div>
 
     <script type="module" src="app.js"></script>
