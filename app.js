@@ -570,6 +570,12 @@ function initDashboard() {
                         window.dailyPaymentTotals[metodo] = (window.dailyPaymentTotals[metodo] || 0) + v.total;
                     }
                     
+                    // MÁGICA DA HORA: Puxa a hora exata da venda do servidor
+                    let horaStr = '';
+                    if (v.data && typeof v.data.toDate === 'function') {
+                        horaStr = v.data.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    }
+
                     if(history) {
                         const div = document.createElement('div');
                         div.className = "bg-white p-5 rounded-[1.5rem] border border-gray-100 flex justify-between items-center shadow-sm hover:shadow-md transition";
@@ -577,7 +583,7 @@ function initDashboard() {
                         div.innerHTML = `
                             <div class="flex-1">
                                 <p class="font-black text-gray-800 text-lg">${v.isVoucherPgto ? 'Entrada Voucher' : `Pedido #${v.nroPedido}`}</p>
-                                <p class="text-xs text-gray-500 font-bold mt-1">${v.cliente} | Pgto: <span class="text-blue-500">${v.pagamento}</span></p>
+                                <p class="text-xs text-gray-500 font-bold mt-1">${v.cliente} | Pgto: <span class="text-blue-500">${v.pagamento}</span> ${horaStr ? `<span class="text-gray-400 ml-1">| 🕒 ${horaStr}</span>` : ''}</p>
                             </div>
                             <div class="text-right mr-5"><p class="font-black text-green-600 text-xl">R$ ${v.total.toFixed(2)}</p></div>
                             <div class="flex gap-2">
@@ -611,7 +617,7 @@ function initDashboard() {
                                     <div style="text-align: left;">
                                         <p class="receipt-info" style="font-weight:bold; text-align:center;">*** 2ª VIA DE RECIBO ***</p>
                                         <p class="receipt-info"><strong>Pedido:</strong> #${v.nroPedido}</p>
-                                        <p class="receipt-info"><strong>Data original:</strong> ${v.dataSimples.split('-').reverse().join('/')}</p>
+                                        <p class="receipt-info"><strong>Data:</strong> ${v.dataSimples.split('-').reverse().join('/')} ${horaStr}</p>
                                         <p class="receipt-info"><strong>Cliente:</strong> ${v.cliente}</p>
                                         ${v.cpf ? `<p class="receipt-info"><strong>CPF:</strong> ${v.cpf}</p>` : ''}
                                         <p class="receipt-info"><strong>Pgto:</strong> ${v.pagamento}</p>
@@ -722,13 +728,20 @@ function initDashboard() {
                 if(pend.status === 'pendente') {
                     pendenteTotal += pend.valor;
                     if(vouchersList) {
+                        
+                        // MÁGICA DA HORA PARA OS VOUCHERS: Puxa a hora exata da venda do servidor
+                        let horaStrPend = '';
+                        if (pend.timestamp && typeof pend.timestamp.toDate === 'function') {
+                            horaStrPend = pend.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                        }
+
                         const div = document.createElement('div');
                         div.className = "bg-purple-50 p-5 rounded-[1.5rem] border border-purple-100 flex flex-col xl:flex-row justify-between items-start xl:items-center shadow-sm hover:shadow-md transition gap-4";
                         
                         div.innerHTML = `
                             <div class="flex-1">
                                 <p class="font-bold text-purple-800 text-lg">${pend.colaborador}</p>
-                                <p class="text-xs text-purple-500 font-bold mt-1">Ref: Pedido #${pend.nroPedido}</p>
+                                <p class="text-xs text-purple-500 font-bold mt-1">Ref: Pedido #${pend.nroPedido} ${horaStrPend ? `<span class="text-purple-400 ml-1">| 🕒 ${horaStrPend}</span>` : ''}</p>
                             </div>
                             <div class="text-left xl:text-right mr-2">
                                 <p class="font-black text-purple-700 text-2xl">R$ ${pend.valor.toFixed(2)}</p>
@@ -740,7 +753,6 @@ function initDashboard() {
                             </div>
                         `;
 
-                        // IMPRIMIR RECIBO DO VOUCHER COM ITENS DO BANCO DE DADOS
                         div.querySelector('.btn-print-voucher').onclick = async () => {
                             const vQuery = query(collection(db, "vendas"), where("nroPedido", "==", pend.nroPedido));
                             const vSnap = await getDocs(vQuery);
@@ -772,7 +784,7 @@ function initDashboard() {
                                     <div style="text-align: left;">
                                         <p class="receipt-info"><strong>Colaborador:</strong> ${pend.colaborador}</p>
                                         <p class="receipt-info"><strong>Ref. Pedido:</strong> #${pend.nroPedido}</p>
-                                        <p class="receipt-info"><strong>Data:</strong> ${pend.dataStr.split('-').reverse().join('/')}</p>
+                                        <p class="receipt-info"><strong>Data:</strong> ${pend.dataStr.split('-').reverse().join('/')} ${horaStrPend}</p>
                                     </div>
                                     <div class="receipt-divider"></div>
                                     <div style="text-align: center; font-weight: bold; font-size: 11px; margin-bottom: 5px;">ITENS CONSUMIDOS</div>
