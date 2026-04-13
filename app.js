@@ -18,7 +18,6 @@ let currentDateFilter = new Date().toISOString().split('T')[0];
 let currentClientHistory = null;
 let appConfig = { nome: "Matsucafe", cnpj: "", endereco: "", telefone: "", msg: "Obrigado e volte sempre!", logo: "" };
 
-// NOVA REGRA DE NEGÓCIO: Quem tem direito a Voucher
 const tiposComVoucher = ['Colaborador', 'Colaborador Interno', 'Médico', 'Estagiário'];
 
 // ==========================================
@@ -64,7 +63,7 @@ if(loginForm) {
 }
 
 // ==========================================
-// CONFIGURAÇÕES (Com alteração da Logo do Menu)
+// CONFIGURAÇÕES
 // ==========================================
 function loadSettings() {
     onSnapshot(doc(db, "config", "loja"), (docSnap) => {
@@ -76,10 +75,7 @@ function loadSettings() {
             if(document.getElementById('cfg-telefone')) document.getElementById('cfg-telefone').value = appConfig.telefone || '';
             if(document.getElementById('cfg-msg')) document.getElementById('cfg-msg').value = appConfig.msg || '';
             if(document.getElementById('cfg-logo')) document.getElementById('cfg-logo').value = appConfig.logo || '';
-            
-            if(document.getElementById('sidebar-logo')) {
-                document.getElementById('sidebar-logo').src = appConfig.logo || 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=100&q=80';
-            }
+            if(document.getElementById('sidebar-logo')) document.getElementById('sidebar-logo').src = appConfig.logo || 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=100&q=80';
         }
     });
 }
@@ -88,12 +84,9 @@ const btnSaveCfg = document.getElementById('btn-save-cfg');
 if(btnSaveCfg) {
     btnSaveCfg.onclick = async () => {
         await setDoc(doc(db, "config", "loja"), {
-            nome: document.getElementById('cfg-nome').value, 
-            cnpj: document.getElementById('cfg-cnpj').value,
-            endereco: document.getElementById('cfg-endereco').value, 
-            telefone: document.getElementById('cfg-telefone').value,
-            msg: document.getElementById('cfg-msg').value,
-            logo: document.getElementById('cfg-logo').value
+            nome: document.getElementById('cfg-nome').value, cnpj: document.getElementById('cfg-cnpj').value,
+            endereco: document.getElementById('cfg-endereco').value, telefone: document.getElementById('cfg-telefone').value,
+            msg: document.getElementById('cfg-msg').value, logo: document.getElementById('cfg-logo').value
         });
         alert("Configurações salvas com sucesso!");
     };
@@ -122,20 +115,16 @@ if(pdvClienteSelect) {
         const nome = e.target.value;
         const c = clients.find(cli => cli.nome === nome);
         const infoDiv = document.getElementById('pdv-voucher-info');
-        
         if(c && tiposComVoucher.includes(c.tipo)) {
             const saldo = parseFloat(c.saldo_voucher !== undefined ? c.saldo_voucher : c.voucher || 0);
             document.getElementById('pdv-voucher-saldo').innerText = `R$ ${saldo.toFixed(2)}`;
             infoDiv.classList.remove('hidden');
-        } else {
-            infoDiv.classList.add('hidden');
-        }
+        } else { infoDiv.classList.add('hidden'); }
     });
 }
 
 function renderCRM(searchTerm = '') {
-    const list = document.getElementById('crm-list'); 
-    if(!list) return;
+    const list = document.getElementById('crm-list'); if(!list) return;
     list.innerHTML = '';
     const filtered = clients.filter(c => c.nome.toLowerCase().includes(searchTerm.toLowerCase()));
     
@@ -185,7 +174,6 @@ if(btnSaveClient) {
         const addSaldo = parseFloat(document.getElementById('cli-add-saldo').value || 0); 
         
         let valorSaldoAtual = inputSaldo !== '' ? parseFloat(inputSaldo) : valorVoucher;
-        
         valorSaldoAtual += addSaldo;
 
         const data = {
@@ -198,7 +186,6 @@ if(btnSaveClient) {
 
         if(id) await updateDoc(doc(db, "clientes", id), data); 
         else await addDoc(collection(db, "clientes"), data);
-        
         window.closeModals();
     };
 }
@@ -259,8 +246,7 @@ window.printClientHistory = async () => {
     const q = query(collection(db, "vendas"), where("cliente", "==", currentClientHistory));
     const snap = await getDocs(q);
 
-    let total = 0;
-    let reportHtml = '';
+    let total = 0; let reportHtml = '';
 
     snap.forEach(doc => {
         const v = doc.data();
@@ -304,18 +290,14 @@ window.printClientHistory = async () => {
             <div class="receipt-divider"></div>
             ${reportHtml || '<p style="text-align:center; font-size:12px;">Nenhum consumo no período.</p>'}
             <div class="receipt-total"><span>TOTAL GASTO:</span><span>R$ ${total.toFixed(2)}</span></div>
-            <div class="receipt-footer">
-                <p style="margin-top: 40px;">___________________________________</p>
-                <p style="font-weight: bold; margin-top:5px;">ASSINATURA</p>
-            </div>
-            <br>
+            <div class="receipt-footer"><p style="margin-top: 40px;">___________________________________</p><p style="font-weight: bold; margin-top:5px;">ASSINATURA</p></div><br>
         `;
         setTimeout(() => { window.print(); }, 300);
     }
 };
 
 // ==========================================
-// ESTOQUE COM LOTES E ROLAGEM CORRIGIDA
+// ESTOQUE COM LOTES 
 // ==========================================
 async function loadProducts() {
     onSnapshot(collection(db, "produtos"), (snapshot) => {
@@ -330,21 +312,16 @@ async function loadProducts() {
                 p.lotes = [{ id_lote: Date.now().toString(), quantidade: p.estoque, data_entrada: p.validade || '-', validade: p.validade || '', tipo: 'unidade' }];
             }
             products.push(p);
-
             const totalEstoque = (p.lotes || []).reduce((acc, lote) => acc + lote.quantidade, 0);
             if(quebraSelect) quebraSelect.innerHTML += `<option value="${p.id}">${p.nome} (${totalEstoque} disp.)</option>`;
         });
-        
-        window.renderAdminProducts(); 
-        buildCategoryTabs();
+        window.renderAdminProducts(); buildCategoryTabs();
     });
 }
 
 window.renderAdminProducts = (searchTerm = '') => {
-    const list = document.getElementById('admin-product-list'); 
-    if(!list) return;
+    const list = document.getElementById('admin-product-list'); if(!list) return;
     list.innerHTML = '';
-    
     const hoje = new Date(); hoje.setHours(0,0,0,0);
     const filtered = products.filter(p => p.nome.toLowerCase().includes(searchTerm.toLowerCase()));
 
@@ -356,8 +333,7 @@ window.renderAdminProducts = (searchTerm = '') => {
 
         let statusVencimentoHtml = '<span class="text-gray-400">Sem validade</span>';
         if (loteMaisProximo) {
-            const dataValidade = new Date(loteMaisProximo.validade);
-            dataValidade.setHours(0,0,0,0);
+            const dataValidade = new Date(loteMaisProximo.validade); dataValidade.setHours(0,0,0,0);
             const diffDias = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 3600 * 24));
             const dataFormatada = loteMaisProximo.validade.split('-').reverse().join('/');
 
@@ -416,12 +392,11 @@ if(btnSaveProduct) {
 }
 
 // ==========================================
-// COMBOS
+// COMBOS E QUEBRAS
 // ==========================================
 async function loadCombos() {
     onSnapshot(collection(db, "combos"), (snapshot) => {
-        combos = []; const list = document.getElementById('combos-list'); 
-        if(!list) return;
+        combos = []; const list = document.getElementById('combos-list'); if(!list) return;
         list.innerHTML = '';
         snapshot.forEach((docSnap) => {
             const c = { id: docSnap.id, ...docSnap.data() }; combos.push(c);
@@ -431,10 +406,7 @@ async function loadCombos() {
             const div = document.createElement('div');
             div.className = "p-5 border border-gray-100 rounded-2xl flex justify-between items-center hover:shadow-lg transition bg-white shadow-sm";
             div.innerHTML = `
-                <div class="flex items-center">
-                    ${imgHtml}
-                    <div><h4 class="font-black text-gray-800 text-lg">${c.nome}</h4><p class="text-xs text-gray-500 font-bold uppercase mt-1">${itemsText}</p><p class="text-green-600 font-black mt-2 text-xl">R$ ${c.preco.toFixed(2)}</p></div>
-                </div>
+                <div class="flex items-center">${imgHtml}<div><h4 class="font-black text-gray-800 text-lg">${c.nome}</h4><p class="text-xs text-gray-500 font-bold uppercase mt-1">${itemsText}</p><p class="text-green-600 font-black mt-2 text-xl">R$ ${c.preco.toFixed(2)}</p></div></div>
                 <button class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-del"><i class="ph ph-trash text-xl"></i></button>
             `;
             div.querySelector('.btn-del').onclick = async () => { if(confirm('Excluir Combo?')) await deleteDoc(doc(db, "combos", c.id)); };
@@ -452,30 +424,21 @@ if(btnSaveCombo) {
         const preco = parseFloat(document.getElementById('combo-preco').value || 0);
         const checkboxes = document.querySelectorAll('.combo-prod-check:checked');
         if(!nome || preco <= 0 || checkboxes.length === 0) return alert('Preencha nome, preço e selecione produtos!');
-        
-        const itensSelecionados = Array.from(checkboxes).map(cb => {
-            const prod = products.find(p => p.id === cb.value);
-            return { id: prod.id, nome: prod.nome, custo: prod.custo };
-        });
-
+        const itensSelecionados = Array.from(checkboxes).map(cb => { const prod = products.find(p => p.id === cb.value); return { id: prod.id, nome: prod.nome, custo: prod.custo }; });
         await addDoc(collection(db, "combos"), { nome, imagem, preco, itens: itensSelecionados, isCombo: true });
         window.closeModals();
     };
 }
 
-// ==========================================
-// QUEBRAS
-// ==========================================
 async function loadQuebras() {
     onSnapshot(collection(db, "quebras"), (snapshot) => {
-        const list = document.getElementById('quebra-list'); 
-        if(!list) return;
+        const list = document.getElementById('quebra-list'); if(!list) return;
         list.innerHTML = '';
         snapshot.forEach(docSnap => {
             const q = docSnap.data(); const div = document.createElement('div');
             div.className = "bg-white p-4 rounded-2xl flex justify-between items-center border border-red-100 shadow-sm";
             div.innerHTML = `<div><p class="font-black text-red-600 uppercase">${q.produtoNome} x${q.qtd}</p><p class="text-xs font-bold text-gray-500 mt-1">${q.motivo} | Perda: R$ ${(q.valorPerda || 0).toFixed(2)}</p></div><button class="bg-gray-100 hover:bg-red-500 hover:text-white transition text-gray-400 p-3 rounded-xl shadow-sm btn-del"><i class="ph ph-trash text-lg"></i></button>`;
-            div.querySelector('.btn-del').onclick = async () => { if(confirm('Apagar registro de quebra?')) await deleteDoc(doc(db, "quebras", docSnap.id)); };
+            div.querySelector('.btn-del').onclick = async () => { if(confirm('Apagar registro?')) await deleteDoc(doc(db, "quebras", docSnap.id)); };
             list.appendChild(div);
         });
     });
@@ -487,46 +450,48 @@ if(btnAddQuebra) {
         const pId = document.getElementById('quebra-produto').value; 
         const qty = parseInt(document.getElementById('quebra-qty').value);
         const p = products.find(prod => prod.id === pId);
-        
         if(!p || !qty) return alert("Preencha corretamente!");
-        
         const estoqueAtual = p.estoque_total !== undefined ? p.estoque_total : p.estoque;
-        if(qty > estoqueAtual) return alert("Quantidade de quebra maior que o estoque disponível!");
-
-        await addDoc(collection(db, "quebras"), { 
-            produtoId: pId, produtoNome: p.nome, qtd: qty, motivo: document.getElementById('quebra-motivo').value || '-', 
-            valorPerda: p.custo * qty, data: serverTimestamp(), dataSimples: new Date().toISOString().split('T')[0] 
-        });
-
+        if(qty > estoqueAtual) return alert("Quantidade maior que o estoque!");
+        await addDoc(collection(db, "quebras"), { produtoId: pId, produtoNome: p.nome, qtd: qty, motivo: document.getElementById('quebra-motivo').value || '-', valorPerda: p.custo * qty, data: serverTimestamp(), dataSimples: new Date().toISOString().split('T')[0] });
         await baixarEstoqueFIFO(p.id, qty);
-        
         document.getElementById('quebra-qty').value = ''; document.getElementById('quebra-motivo').value = '';
         alert("Quebra registrada e estoque deduzido!");
     };
 }
 
 // ==========================================
-// FUNÇÃO CENTRAL DE BAIXA DE ESTOQUE (FIFO)
+// ESTORNO MANUAL E ESTOQUE FIFO
 // ==========================================
+window.processarEstornoManual = async (nomeProd, qtde) => {
+    const pQuery = query(collection(db, "produtos"), where("nome", "==", nomeProd));
+    const pSnap = await getDocs(pQuery);
+    if (!pSnap.empty) {
+        const pDoc = pSnap.docs[0];
+        const pData = pDoc.data();
+        let lotesAtuais = pData.lotes || [];
+        lotesAtuais.push({
+            id_lote: `estorno_${Date.now()}`,
+            tipo: 'Devolução de Venda',
+            quantidade: qtde,
+            data_entrada: new Date().toISOString().split('T')[0],
+            validade: '' 
+        });
+        const novoEstoqueTotal = lotesAtuais.reduce((acc, l) => acc + l.quantidade, 0);
+        await updateDoc(doc(db, "produtos", pDoc.id), { lotes: lotesAtuais, estoque_total: novoEstoqueTotal });
+    }
+};
+
 async function baixarEstoqueFIFO(produtoId, quantidadeParaBaixar) {
     const p = products.find(prod => prod.id === produtoId);
     if(!p) return;
-
-    let lotesAtuais = p.lotes || [];
-    let qtdRestante = quantidadeParaBaixar;
-    
+    let lotesAtuais = p.lotes || []; let qtdRestante = quantidadeParaBaixar;
     lotesAtuais.sort((a, b) => new Date(a.validade) - new Date(b.validade));
-    
     for (let lote of lotesAtuais) {
         if (qtdRestante <= 0) break;
         if (lote.quantidade > 0) {
-            if (lote.quantidade >= qtdRestante) {
-                lote.quantidade -= qtdRestante;
-                qtdRestante = 0;
-            } else {
-                qtdRestante -= lote.quantidade;
-                lote.quantidade = 0;
-            }
+            if (lote.quantidade >= qtdRestante) { lote.quantidade -= qtdRestante; qtdRestante = 0; } 
+            else { qtdRestante -= lote.quantidade; lote.quantidade = 0; }
         }
     }
     const novoEstoqueTotal = lotesAtuais.reduce((acc, l) => acc + l.quantidade, 0);
@@ -534,13 +499,10 @@ async function baixarEstoqueFIFO(produtoId, quantidadeParaBaixar) {
 }
 
 // ==========================================
-// FINANCEIRO AVANÇADO E RELATÓRIOS
+// FINANCEIRO, HORA E REMOÇÃO DE ITEM DO PEDIDO
 // ==========================================
 const filtroData = document.getElementById('filtro-data');
-if(filtroData) {
-    filtroData.value = currentDateFilter;
-    filtroData.onchange = (e) => { currentDateFilter = e.target.value; initDashboard(); };
-}
+if(filtroData) { filtroData.value = currentDateFilter; filtroData.onchange = (e) => { currentDateFilter = e.target.value; initDashboard(); }; }
 
 function initDashboard() {
     window.dailyPaymentTotals = {};
@@ -551,15 +513,14 @@ function initDashboard() {
             const history = document.getElementById('sales-history-list'); 
             const vouchersList = document.getElementById('vouchers-history-list'); 
             
-            if(history) history.innerHTML = '';
-            if(vouchersList) vouchersList.innerHTML = '';
+            if(history) history.innerHTML = ''; if(vouchersList) vouchersList.innerHTML = '';
             window.dailyPaymentTotals = {}; 
 
+            // VENDAS REALIZADAS (LADO ESQUERDO)
             snapVendas.forEach(docSnap => {
                 const v = docSnap.data();
                 if(v.dataSimples === currentDateFilter) {
-                    totalVendas += v.total;
-                    totalCusto += v.custoTotal || 0; 
+                    totalVendas += v.total; totalCusto += v.custoTotal || 0; 
                     
                     let metodo = v.pagamento;
                     if (v.complemento > 0 && metodo.includes('Voucher +')) {
@@ -570,7 +531,6 @@ function initDashboard() {
                         window.dailyPaymentTotals[metodo] = (window.dailyPaymentTotals[metodo] || 0) + v.total;
                     }
                     
-                    // MÁGICA DA HORA: Puxa a hora exata da venda do servidor
                     let horaStr = '';
                     if (v.data && typeof v.data.toDate === 'function') {
                         horaStr = v.data.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -587,11 +547,15 @@ function initDashboard() {
                             </div>
                             <div class="text-right mr-5"><p class="font-black text-green-600 text-xl">R$ ${v.total.toFixed(2)}</p></div>
                             <div class="flex gap-2">
+                                <button class="bg-cyan-50 text-cyan-500 hover:bg-cyan-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-view" title="Ver Itens do Pedido"><i class="ph ph-eye text-lg"></i></button>
                                 <button class="bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-print" title="Imprimir 2ª Via"><i class="ph ph-printer text-lg"></i></button>
                                 <button class="bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-edit" title="Editar Pagamento"><i class="ph ph-pencil-simple text-lg"></i></button>
                                 <button class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-delete" title="Excluir Venda e Estornar Estoque"><i class="ph ph-trash text-lg"></i></button>
                             </div>
                         `;
+
+                        // MÁGICA DE ABRIR O PEDIDO E EDITAR ITENS
+                        div.querySelector('.btn-view').onclick = () => window.openOrderDetails(docSnap.id, v);
 
                         div.querySelector('.btn-print').onclick = () => {
                             let cupomItems = '';
@@ -601,18 +565,11 @@ function initDashboard() {
                                     cupomItems += `<div class="receipt-item"><span>${qtde}x ${i.nome}</span><span>R$ ${(i.preco * qtde).toFixed(2)}</span></div>`;
                                 });
                             }
-
                             const logoHtml = appConfig.logo ? `<img src="${appConfig.logo}" class="receipt-logo">` : '';
                             const printSec = document.getElementById('print-section');
                             if(printSec) {
                                 printSec.innerHTML = `
-                                    <div class="receipt-header">
-                                        ${logoHtml}
-                                        <h2 class="receipt-title">${appConfig.nome || 'Matsucafe'}</h2>
-                                        <p class="receipt-info">CNPJ: ${appConfig.cnpj || 'Não informado'}</p>
-                                        <p class="receipt-info">${appConfig.endereco || ''}</p>
-                                        <p class="receipt-info">${appConfig.telefone || ''}</p>
-                                    </div>
+                                    <div class="receipt-header">${logoHtml}<h2 class="receipt-title">${appConfig.nome || 'Matsucafe'}</h2><p class="receipt-info">CNPJ: ${appConfig.cnpj || 'Não informado'}</p><p class="receipt-info">${appConfig.endereco || ''}</p><p class="receipt-info">${appConfig.telefone || ''}</p></div>
                                     <div class="receipt-divider"></div>
                                     <div style="text-align: left;">
                                         <p class="receipt-info" style="font-weight:bold; text-align:center;">*** 2ª VIA DE RECIBO ***</p>
@@ -622,12 +579,9 @@ function initDashboard() {
                                         ${v.cpf ? `<p class="receipt-info"><strong>CPF:</strong> ${v.cpf}</p>` : ''}
                                         <p class="receipt-info"><strong>Pgto:</strong> ${v.pagamento}</p>
                                     </div>
-                                    <div class="receipt-divider"></div>
-                                    <div>${cupomItems}</div>
-                                    <div class="receipt-divider"></div>
+                                    <div class="receipt-divider"></div><div>${cupomItems}</div><div class="receipt-divider"></div>
                                     <div class="receipt-total"><span>TOTAL</span><span>R$ ${v.total.toFixed(2)}</span></div>
-                                    <div class="receipt-footer"><p>${appConfig.msg || 'Obrigado e volte sempre!'}</p></div>
-                                    <br>
+                                    <div class="receipt-footer"><p>${appConfig.msg || 'Obrigado e volte sempre!'}</p></div><br>
                                 `;
                                 setTimeout(() => { window.print(); }, 300);
                             }
@@ -636,13 +590,11 @@ function initDashboard() {
                         div.querySelector('.btn-edit').onclick = async () => {
                             const novoPgto = prompt(`Forma de pagamento atual: ${v.pagamento}\n\nDigite a nova forma de pagamento correta (Ex: Crédito, Débito, PIX, Dinheiro):`, v.pagamento);
                             if(novoPgto && novoPgto.trim() !== "" && novoPgto !== v.pagamento) {
-                                
                                 if (v.pagamento.toLowerCase().includes('voucher') && !novoPgto.toLowerCase().includes('voucher')) {
                                     const pendQuery = query(collection(db, "vouchers_pendentes"), where("nroPedido", "==", v.nroPedido));
                                     const pendSnap = await getDocs(pendQuery);
                                     if (!pendSnap.empty) {
-                                        const pendDoc = pendSnap.docs[0];
-                                        const pendData = pendDoc.data();
+                                        const pendDoc = pendSnap.docs[0]; const pendData = pendDoc.data();
                                         const c = clients.find(cli => cli.nome === pendData.colaborador);
                                         if(c) {
                                             const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(pendData.valorRestaurar || pendData.valor);
@@ -651,7 +603,6 @@ function initDashboard() {
                                         await deleteDoc(doc(db, "vouchers_pendentes", pendDoc.id));
                                     }
                                 }
-                                
                                 await updateDoc(doc(db, "vendas", docSnap.id), { pagamento: novoPgto.trim() });
                                 alert("Forma de pagamento atualizada com sucesso!");
                             }
@@ -659,41 +610,16 @@ function initDashboard() {
 
                         div.querySelector('.btn-delete').onclick = async () => {
                             if(confirm('⚠️ ATENÇÃO: Deseja realmente excluir esta venda?\n\n- O valor será removido do caixa.\n- Os produtos serão devolvidos ao estoque.')) {
-                                
                                 if(v.itens && Array.isArray(v.itens)) {
                                     for(const item of v.itens) {
                                         const qtdeComprada = item.qty || item.qtd || 1;
-                                        
-                                        const processarEstorno = async (nomeProd, qtde) => {
-                                            const pQuery = query(collection(db, "produtos"), where("nome", "==", nomeProd));
-                                            const pSnap = await getDocs(pQuery);
-                                            if (!pSnap.empty) {
-                                                const pDoc = pSnap.docs[0];
-                                                const pData = pDoc.data();
-                                                let lotesAtuais = pData.lotes || [];
-                                                
-                                                lotesAtuais.push({
-                                                    id_lote: `estorno_${Date.now()}`,
-                                                    tipo: 'Estorno de Venda',
-                                                    quantidade: qtde,
-                                                    data_entrada: new Date().toISOString().split('T')[0],
-                                                    validade: '' 
-                                                });
-                                                
-                                                const novoEstoqueTotal = lotesAtuais.reduce((acc, l) => acc + l.quantidade, 0);
-                                                await updateDoc(doc(db, "produtos", pDoc.id), { lotes: lotesAtuais, estoque_total: novoEstoqueTotal });
-                                            }
-                                        };
-
                                         const cQuery = query(collection(db, "combos"), where("nome", "==", item.nome));
                                         const cSnap = await getDocs(cQuery);
                                         if (!cSnap.empty) {
                                             const comboData = cSnap.docs[0].data();
-                                            for (const subItem of comboData.itens) {
-                                                await processarEstorno(subItem.nome, qtdeComprada);
-                                            }
+                                            for (const subItem of comboData.itens) await window.processarEstornoManual(subItem.nome, qtdeComprada);
                                         } else {
-                                            await processarEstorno(item.nome, qtdeComprada);
+                                            await window.processarEstornoManual(item.nome, qtdeComprada);
                                         }
                                     }
                                 }
@@ -702,8 +628,7 @@ function initDashboard() {
                                     const pendQuery = query(collection(db, "vouchers_pendentes"), where("nroPedido", "==", v.nroPedido));
                                     const pendSnap = await getDocs(pendQuery);
                                     if (!pendSnap.empty) {
-                                        const pendDoc = pendSnap.docs[0];
-                                        const pendData = pendDoc.data();
+                                        const pendDoc = pendSnap.docs[0]; const pendData = pendDoc.data();
                                         const c = clients.find(cli => cli.nome === pendData.colaborador);
                                         if(c) {
                                             const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(pendData.valorRestaurar || pendData.valor);
@@ -712,24 +637,21 @@ function initDashboard() {
                                         await deleteDoc(doc(db, "vouchers_pendentes", pendDoc.id));
                                     }
                                 }
-                                
                                 await deleteDoc(doc(db, "vendas", docSnap.id));
                                 alert("Venda excluída e produtos estornados para o estoque com sucesso!");
                             }
                         };
-
                         history.appendChild(div);
                     }
                 }
             });
 
+            // VOUCHERS PENDENTES (LADO DIREITO)
             snapVouchers.forEach(docSnap => {
                 const pend = docSnap.data();
                 if(pend.status === 'pendente') {
                     pendenteTotal += pend.valor;
                     if(vouchersList) {
-                        
-                        // MÁGICA DA HORA PARA OS VOUCHERS: Puxa a hora exata da venda do servidor
                         let horaStrPend = '';
                         if (pend.timestamp && typeof pend.timestamp.toDate === 'function') {
                             horaStrPend = pend.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -757,7 +679,6 @@ function initDashboard() {
                             const vQuery = query(collection(db, "vendas"), where("nroPedido", "==", pend.nroPedido));
                             const vSnap = await getDocs(vQuery);
                             let itensHtml = '';
-                            
                             if(!vSnap.empty) {
                                 const vendaObj = vSnap.docs[0].data();
                                 if(vendaObj.itens) {
@@ -767,19 +688,13 @@ function initDashboard() {
                                     });
                                 }
                             }
-
                             const logoHtml = appConfig.logo ? `<img src="${appConfig.logo}" class="receipt-logo">` : '';
                             const printSec = document.getElementById('print-section');
                             if(printSec) {
                                 printSec.innerHTML = `
-                                    <div class="receipt-header">
-                                        ${logoHtml}
-                                        <h2 class="receipt-title">${appConfig.nome || 'Matsucafe'}</h2>
-                                    </div>
+                                    <div class="receipt-header">${logoHtml}<h2 class="receipt-title">${appConfig.nome || 'Matsucafe'}</h2></div>
                                     <div class="receipt-divider"></div>
-                                    <div style="text-align: center;">
-                                        <p class="receipt-info" style="font-weight:bold; font-size: 14px;">COMPROVANTE DE VOUCHER</p>
-                                    </div>
+                                    <div style="text-align: center;"><p class="receipt-info" style="font-weight:bold; font-size: 14px;">COMPROVANTE DE VOUCHER</p><p class="receipt-info" style="font-weight:bold; font-size: 12px;">(PENDENTE DE DESCONTO)</p></div>
                                     <div class="receipt-divider"></div>
                                     <div style="text-align: left;">
                                         <p class="receipt-info"><strong>Colaborador:</strong> ${pend.colaborador}</p>
@@ -791,11 +706,7 @@ function initDashboard() {
                                     <div>${itensHtml || '<p style="text-align:center; font-size:11px;">Itens não encontrados.</p>'}</div>
                                     <div class="receipt-divider"></div>
                                     <div class="receipt-total"><span>VALOR TOTAL</span><span>R$ ${pend.valor.toFixed(2)}</span></div>
-                                    <div class="receipt-footer">
-                                        <p style="margin-top: 40px;">___________________________________</p>
-                                        <p style="font-weight: bold; margin-top:5px;">ASSINATURA</p>
-                                    </div>
-                                    <br>
+                                    <div class="receipt-footer"><p style="margin-top: 40px;">___________________________________</p><p style="font-weight: bold; margin-top:5px;">ASSINATURA</p></div><br>
                                 `;
                                 setTimeout(() => { window.print(); }, 300);
                             }
@@ -803,26 +714,19 @@ function initDashboard() {
 
                         div.querySelector('.btn-edit-voucher').onclick = async () => {
                             const novoPgto = prompt(`Lançamento atual: VOUCHER PENDENTE\n\nSe foi um erro do caixa e o cliente pagou na hora, digite a forma correta (Ex: PIX, Cartão, Dinheiro):`);
-                            
                             if(novoPgto && novoPgto.trim() !== "" && !novoPgto.toLowerCase().includes('voucher')) {
                                 if(confirm(`Mudar este lançamento para ${novoPgto.trim().toUpperCase()}?\n\n- O limite do colaborador será devolvido.\n- A venda ficará como Cliente Avulso na lista principal.`)) {
-                                    
                                     const c = clients.find(cli => cli.nome === pend.colaborador);
                                     if(c) {
                                         const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(pend.valorRestaurar || pend.valor);
                                         await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
                                     }
-
                                     const vQuery = query(collection(db, "vendas"), where("nroPedido", "==", pend.nroPedido));
                                     const vSnap = await getDocs(vQuery);
                                     if(!vSnap.empty) {
                                         const vendaRef = vSnap.docs[0];
-                                        await updateDoc(doc(db, "vendas", vendaRef.id), { 
-                                            pagamento: novoPgto.trim(),
-                                            cliente: "Cliente Avulso" 
-                                        });
+                                        await updateDoc(doc(db, "vendas", vendaRef.id), { pagamento: novoPgto.trim(), cliente: "Cliente Avulso" });
                                     }
-
                                     await deleteDoc(doc(db, "vouchers_pendentes", docSnap.id));
                                     alert("Lançamento corrigido com sucesso! O valor já está no caixa geral.");
                                 }
@@ -831,30 +735,19 @@ function initDashboard() {
 
                         div.querySelector('.btn-receber').onclick = async () => {
                             if(confirm(`Confirmar recebimento financeiro de R$ ${pend.valor.toFixed(2)} referente a ${pend.colaborador}? O valor será injetado no caixa de hoje.`)) {
-                                
                                 await updateDoc(doc(db, "vouchers_pendentes", docSnap.id), { status: 'pago', dataPagamento: new Date().toISOString() });
-                                
                                 const c = clients.find(cli => cli.nome === pend.colaborador);
                                 if(c) {
                                     const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(pend.valorRestaurar || pend.valor);
                                     await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
                                 }
-
                                 const nroPagamento = Math.floor(1000 + Math.random() * 9000);
                                 await addDoc(collection(db, "vendas"), {
-                                    nroPedido: `PGTO-${nroPagamento}`, 
-                                    total: pend.valor, 
-                                    custoTotal: 0, 
-                                    cliente: pend.colaborador, 
-                                    pagamento: 'Recebimento Voucher', 
-                                    cpf: '',
-                                    complemento: 0,
-                                    isVoucherPgto: true,
-                                    data: serverTimestamp(), 
-                                    dataSimples: new Date().toISOString().split('T')[0], 
+                                    nroPedido: `PGTO-${nroPagamento}`, total: pend.valor, custoTotal: 0, cliente: pend.colaborador, 
+                                    pagamento: 'Recebimento Voucher', cpf: '', complemento: 0, isVoucherPgto: true,
+                                    data: serverTimestamp(), dataSimples: new Date().toISOString().split('T')[0], 
                                     itens: [{nome: `Pgto Voucher (Ref. #${pend.nroPedido})`, qty: 1, preco: pend.valor}]
                                 });
-
                                 alert('Baixa realizada! O valor entrou no caixa e o limite dele foi restaurado.');
                             }
                         };
@@ -871,6 +764,89 @@ function initDashboard() {
         });
     });
 }
+
+// ==========================================
+// FUNÇÃO: VER PEDIDO E REMOVER ITENS
+// ==========================================
+window.openOrderDetails = (vendaId, venda) => {
+    const modal = document.getElementById('modal-pedido');
+    if(!modal) return alert("Por favor, adicione o código HTML do Modal de Pedido (modal-pedido) no seu index.html primeiro!");
+    
+    document.getElementById('detalhe-nro-pedido').innerText = `Pedido #${venda.nroPedido}`;
+    document.getElementById('detalhe-cliente-info').innerText = `Cliente: ${venda.cliente} | Pgto: ${venda.pagamento}`;
+    document.getElementById('detalhe-total-venda').innerText = `R$ ${venda.total.toFixed(2)}`;
+    
+    const container = document.getElementById('detalhe-lista-itens');
+    container.innerHTML = '';
+
+    if(venda.itens && Array.isArray(venda.itens)) {
+        venda.itens.forEach((item, index) => {
+            const qtde = item.qty || item.qtd || 1;
+            const div = document.createElement('div');
+            div.className = "bg-white p-3 rounded-xl border border-gray-100 flex justify-between items-center shadow-sm";
+            div.innerHTML = `
+                <div>
+                    <p class="font-bold text-gray-800 text-sm">${qtde}x ${item.nome}</p>
+                    <p class="text-xs text-blue-600 font-bold">R$ ${(item.preco * qtde).toFixed(2)}</p>
+                </div>
+                <button class="bg-red-50 text-red-400 p-2 rounded-lg hover:bg-red-500 hover:text-white transition btn-rem-item" title="Remover item e devolver ao estoque"><i class="ph ph-trash text-lg"></i></button>
+            `;
+            
+            // FUNÇÃO PARA REMOVER O ITEM ESPECÍFICO
+            div.querySelector('.btn-rem-item').onclick = async () => {
+                if(confirm(`Deseja realmente remover "${item.nome}" deste pedido?\n\n- O valor será abatido do caixa.\n- O produto voltará para o estoque.`)) {
+                    
+                    const valorItem = item.preco * qtde;
+                    const novosItens = venda.itens.filter((_, i) => i !== index); // Remove apenas este item
+                    
+                    // Atualiza a venda principal reduzindo o total
+                    await updateDoc(doc(db, "vendas", vendaId), {
+                        itens: novosItens,
+                        total: venda.total - valorItem
+                    });
+
+                    // Se a venda for voucher, tem que devolver o limite também pro cliente
+                    if (venda.pagamento.toLowerCase().includes('voucher')) {
+                         const pendQuery = query(collection(db, "vouchers_pendentes"), where("nroPedido", "==", venda.nroPedido));
+                         const pendSnap = await getDocs(pendQuery);
+                         if (!pendSnap.empty) {
+                             const pendDoc = pendSnap.docs[0];
+                             const pendData = pendDoc.data();
+                             const c = clients.find(cli => cli.nome === pendData.colaborador);
+                             if(c) {
+                                 const novoSaldo = parseFloat(c.saldo_voucher || 0) + valorItem;
+                                 await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
+                             }
+                             // Atualiza o valor da pendência no financeiro
+                             await updateDoc(doc(db, "vouchers_pendentes", pendDoc.id), {
+                                 valor: pendData.valor - valorItem,
+                                 valorRestaurar: (pendData.valorRestaurar || pendData.valor) - valorItem
+                             });
+                         }
+                    }
+
+                    // Devolve produto para o estoque
+                    const cQuery = query(collection(db, "combos"), where("nome", "==", item.nome));
+                    const cSnap = await getDocs(cQuery);
+                    if (!cSnap.empty) { // Se for combo, devolve os sub-itens
+                        const comboData = cSnap.docs[0].data();
+                        for (const subItem of comboData.itens) await window.processarEstornoManual(subItem.nome, qtde);
+                    } else { // Se for produto normal
+                        await window.processarEstornoManual(item.nome, qtde);
+                    }
+                    
+                    alert("Item removido com sucesso! Estoque e caixa atualizados.");
+                    modal.classList.add('hidden'); 
+                }
+            };
+            container.appendChild(div);
+        });
+    } else {
+        container.innerHTML = '<p class="text-sm text-gray-500 text-center p-4">Nenhum item detalhado encontrado nesta venda.</p>';
+    }
+    
+    modal.classList.remove('hidden');
+};
 
 const btnPrintDay = document.getElementById('btn-print-day');
 if(btnPrintDay) {
