@@ -849,9 +849,21 @@ window.openOrderDetails = (vendaId, venda) => {
             container.appendChild(div);
         });
     } else {
+       } else {
         container.innerHTML = '<p class="text-sm text-gray-500 text-center p-4">Nenhum item detalhado encontrado nesta venda.</p>';
     }
     
+    if (venda.desconto > 0) {
+        container.innerHTML += `
+        <div class="p-3 bg-red-50 rounded-xl border border-red-100 mt-2">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-xs font-black text-red-600 uppercase">Desconto Aplicado:</span>
+                <span class="text-sm font-black text-red-700">- R$ ${venda.desconto.toFixed(2)}</span>
+            </div>
+            <p class="text-[10px] text-red-500 font-bold uppercase">Motivo: ${venda.motivoDesconto || 'Não informado'}</p>
+        </div>`;
+    }
+
     modal.classList.remove('hidden');
 };
 
@@ -975,13 +987,28 @@ if(document.getElementById('btn-clear')) document.getElementById('btn-clear').on
 function updateCart() {
     const list = document.getElementById('cart-items'); 
     if(!list) return;
-    list.innerHTML = ''; cartTotal = 0;
+    list.innerHTML = ''; 
+    let subtotal = 0; // Usamos subtotal antes do desconto
+
     cart.forEach(item => {
-        cartTotal += item.preco * item.qty;
+        subtotal += item.preco * item.qty;
         list.innerHTML += `<div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-2"><div class="flex-1"><p class="font-black text-gray-800 text-sm leading-tight">${item.qty}x ${item.nome}</p><p class="text-xs text-gray-500 font-bold mt-1">R$ ${(item.preco * item.qty).toFixed(2)}</p></div><button onclick="window.removeCartItem('${item.id}')" class="text-red-400 hover:text-red-600 bg-red-50 p-2 rounded-xl transition"><i class="ph ph-x-circle text-lg"></i></button></div>`;
     });
+
+    // Puxa o valor digitado no desconto
+    const descInput = document.getElementById('pdv-desconto');
+    let valorDesconto = parseFloat(descInput && descInput.value ? descInput.value : 0);
+    if (valorDesconto > subtotal) valorDesconto = subtotal; // Impede que o desconto seja maior que a venda
+
+    cartTotal = subtotal - valorDesconto; // cartTotal passa a ser o valor FINAL a ser pago
+
+    if(document.getElementById('subtotal')) document.getElementById('subtotal').innerText = `R$ ${subtotal.toFixed(2)}`;
     if(document.getElementById('total')) document.getElementById('total').innerText = `R$ ${cartTotal.toFixed(2)}`;
 }
+
+// Escuta a digitação no campo de desconto para recalcular o total na hora
+const descInput = document.getElementById('pdv-desconto');
+if(descInput) descInput.addEventListener('input', updateCart);
 
 // ==========================================
 // CHECKOUT
@@ -996,7 +1023,8 @@ if(btnCheckout) {
         let pagamento = document.getElementById('pdv-pagamento').value;
         const cpfNaNota = document.getElementById('pdv-cpf').value;
         const dataAtualStr = new Date().toISOString().split('T')[0];
-
+        const valorDescontoDb = parseFloat(document.getElementById('pdv-desconto').value || 0);
+        const motivoDescontoDb = document.getElementById('pdv-desconto-motivo').value || '';
         const c = clients.find(cli => cli.nome === clienteNome);
         let valorPagoNaDiferenca = 0;
         let formaPagamentoComplementar = '';
@@ -1056,7 +1084,7 @@ if(btnCheckout) {
         });
 
         await addDoc(collection(db, "vendas"), {
-            nroPedido: nro, total: cartTotal, custoTotal: custoDaVenda, 
+            nroPedido: nro, total: cartTotal, subtotal: cartTotal + valorDescontoDb, desconto: valorDescontoDb, motivoDesconto: motivoDescontoDb, custoTotal: custoDaVenda, 
             cliente: clienteNome, pagamento: pagamento, cpf: cpfNaNota,
             complemento: valorPagoNaDiferenca, isVoucherPgto: false,
             data: serverTimestamp(), dataSimples: dataAtualStr, itens: cart.map(i => ({ nome: i.nome, qtd: i.qty, preco: i.preco }))
@@ -1095,15 +1123,18 @@ if(btnCheckout) {
                     <p class="receipt-info"><strong>Pgto:</strong> ${pagamento}</p>
                 </div>
                 <div class="receipt-divider"></div>
-                <div>${cupomItems}</div>
                 <div class="receipt-divider"></div>
-                <div class="receipt-total"><span>TOTAL</span><span>R$ ${cartTotal.toFixed(2)}</span></div>
-                <div class="receipt-footer"><p>${appConfig.msg || 'Obrigado e volte sempre!'}</p></div>
+                <div>${cupomItems}</div>
+                ${valorDescontoDb > 0 ? `<div class="receipt-item" style="color:red; margin-top:5px;"><span>DESCONTO:</span><span>- R$ ${valorDescontoDb.toFixed(2)}</span></div>` : ''}
+                <div class="receipt-divider"></div>
+                <div class="receipt-total"><span>TOTAL PAGO</span><span>R$ ${cartTotal.toFixed(2)}</span></div>
                 <br>
             `;
             setTimeout(() => { window.print(); }, 300);
         }
-        cart = []; updateCart(); document.getElementById('pdv-cpf').value = '';
+       cart = []; updateCart(); document.getElementById('pdv-cpf').value = '';
+        document.getElementById('pdv-desconto').value = ''; 
+        document.getElementById('pdv-desconto-motivo').value = '';
     };
 }
 
