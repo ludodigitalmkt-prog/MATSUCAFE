@@ -849,7 +849,6 @@ window.openOrderDetails = (vendaId, venda) => {
             container.appendChild(div);
         });
     } else {
-       } else {
         container.innerHTML = '<p class="text-sm text-gray-500 text-center p-4">Nenhum item detalhado encontrado nesta venda.</p>';
     }
     
@@ -1023,8 +1022,9 @@ if(btnCheckout) {
         let pagamento = document.getElementById('pdv-pagamento').value;
         const cpfNaNota = document.getElementById('pdv-cpf').value;
         const dataAtualStr = new Date().toISOString().split('T')[0];
-        const valorDescontoDb = parseFloat(document.getElementById('pdv-desconto').value || 0);
-        const motivoDescontoDb = document.getElementById('pdv-desconto-motivo').value || '';
+        const valorDescontoDb = parseFloat(document.getElementById('pdv-desconto') ? document.getElementById('pdv-desconto').value : 0) || 0;
+        const motivoDescontoDb = document.getElementById('pdv-desconto-motivo') ? document.getElementById('pdv-desconto-motivo').value : '';
+
         const c = clients.find(cli => cli.nome === clienteNome);
         let valorPagoNaDiferenca = 0;
         let formaPagamentoComplementar = '';
@@ -1123,18 +1123,19 @@ if(btnCheckout) {
                     <p class="receipt-info"><strong>Pgto:</strong> ${pagamento}</p>
                 </div>
                 <div class="receipt-divider"></div>
-                <div class="receipt-divider"></div>
                 <div>${cupomItems}</div>
                 ${valorDescontoDb > 0 ? `<div class="receipt-item" style="color:red; margin-top:5px;"><span>DESCONTO:</span><span>- R$ ${valorDescontoDb.toFixed(2)}</span></div>` : ''}
                 <div class="receipt-divider"></div>
                 <div class="receipt-total"><span>TOTAL PAGO</span><span>R$ ${cartTotal.toFixed(2)}</span></div>
+                <div class="receipt-footer"><p>${appConfig.msg || 'Obrigado e volte sempre!'}</p></div>
                 <br>
             `;
             setTimeout(() => { window.print(); }, 300);
         }
-       cart = []; updateCart(); document.getElementById('pdv-cpf').value = '';
-        document.getElementById('pdv-desconto').value = ''; 
-        document.getElementById('pdv-desconto-motivo').value = '';
+        cart = []; updateCart(); 
+        if(document.getElementById('pdv-cpf')) document.getElementById('pdv-cpf').value = '';
+        if(document.getElementById('pdv-desconto')) document.getElementById('pdv-desconto').value = ''; 
+        if(document.getElementById('pdv-desconto-motivo')) document.getElementById('pdv-desconto-motivo').value = '';
     };
 }
 
