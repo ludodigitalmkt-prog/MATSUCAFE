@@ -14,7 +14,8 @@ const db = getFirestore(app);
 
 const ADMIN_EMAIL = "gestao@matsu.com"; 
 let products = []; let clients = []; let combos = []; let cart = []; let cartTotal = 0;
-let currentDateFilter = new Date().toISOString().split('T')[0];
+let currentDateFilterInicio = new Date().toISOString().split('T')[0];
+let currentDateFilterFim = new Date().toISOString().split('T')[0];
 let currentClientHistory = null;
 let appConfig = { nome: "Matsucafe", cnpj: "", endereco: "", telefone: "", msg: "Obrigado e volte sempre!", logo: "" };
 
@@ -501,8 +502,14 @@ async function baixarEstoqueFIFO(produtoId, quantidadeParaBaixar) {
 // ==========================================
 // FINANCEIRO, HORA E REMOÇÃO DE ITEM DO PEDIDO
 // ==========================================
-const filtroData = document.getElementById('filtro-data');
-if(filtroData) { filtroData.value = currentDateFilter; filtroData.onchange = (e) => { currentDateFilter = e.target.value; initDashboard(); }; }
+const filtroDataInicio = document.getElementById('filtro-data-inicio');
+const filtroDataFim = document.getElementById('filtro-data-fim');
+if(filtroDataInicio && filtroDataFim) { 
+    filtroDataInicio.value = currentDateFilterInicio; 
+    filtroDataFim.value = currentDateFilterFim; 
+    filtroDataInicio.onchange = (e) => { currentDateFilterInicio = e.target.value; initDashboard(); };
+    filtroDataFim.onchange = (e) => { currentDateFilterFim = e.target.value; initDashboard(); };
+}
 
 function initDashboard() {
     window.dailyPaymentTotals = {};
@@ -519,7 +526,7 @@ function initDashboard() {
             // VENDAS REALIZADAS (LADO ESQUERDO)
             snapVendas.forEach(docSnap => {
                 const v = docSnap.data();
-                if(v.dataSimples === currentDateFilter) {
+                if(v.dataSimples >= currentDateFilterInicio && v.dataSimples <= currentDateFilterFim) {
                     totalVendas += v.total; totalCusto += v.custoTotal || 0; 
                     
                     let metodo = v.pagamento;
@@ -865,10 +872,14 @@ if(btnPrintDay) {
             formasPgtoHtml = `<div class="receipt-divider"></div><div style="text-align:center; font-weight:bold; margin-bottom:5px;">RESUMO POR PAGAMENTO</div>` + formasPgtoHtml;
         }
         
+        let periodoStr = currentDateFilterInicio === currentDateFilterFim 
+            ? currentDateFilterInicio.split('-').reverse().join('/') 
+            : `${currentDateFilterInicio.split('-').reverse().join('/')} a ${currentDateFilterFim.split('-').reverse().join('/')}`;
+
         printSec.innerHTML = `
             <div class="receipt-header">
-                <h2 class="receipt-title">FECHAMENTO CAIXA</h2>
-                <p class="receipt-info"><strong>DATA:</strong> ${currentDateFilter.split('-').reverse().join('/')}</p>
+                <h2 class="receipt-title">RELATÓRIO DE CAIXA</h2>
+                <p class="receipt-info"><strong>PERÍODO:</strong><br>${periodoStr}</p>
             </div>
             <div class="receipt-divider"></div>
             <div class="receipt-item"><span>ENTRADAS BRUTAS:</span><span>${document.getElementById('dash-revenue').innerText}</span></div>
