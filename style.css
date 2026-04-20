@@ -78,3 +78,43 @@ input, textarea {
         margin: 0;
         size: 58mm auto; /* 58mm de largura com altura infinita (bobina) */
     }
+
+
+/* ==========================================
+   FUNDO PERSONALIZADO DA INTERFACE
+   ========================================== */
+body.app-shell {
+    position: relative;
+    background-color: #f3f4f6;
+}
+
+body.app-shell::before,
+body.app-shell::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: -1;
+}
+
+body.app-shell::before {
+    background-image: var(--app-bg-image, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(2px) saturate(0.92);
+    transform: scale(1.03);
+    opacity: 1;
+}
+
+body.app-shell::after {
+    background: rgba(255, 255, 255, var(--app-bg-opacity, 0));
+    backdrop-filter: blur(6px);
+}
+
+body.app-shell.custom-bg-active main,
+body.app-shell.custom-bg-active #cart-panel,
+body.app-shell.custom-bg-active #login-form {
+    backdrop-filter: blur(4px);
+}
