@@ -154,3 +154,13 @@ body.app-shell.custom-bg-active .rounded-\[1\.5rem\] {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
 }
+
+/* ==========================================
+   MODO MAIS DIRETO PARA FUNDO
+   ========================================== */
+body.app-shell.custom-bg-active {
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+}
