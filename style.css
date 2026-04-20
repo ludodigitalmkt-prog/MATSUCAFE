@@ -124,3 +124,33 @@ body.app-shell.custom-bg-active #cart-panel,
 body.app-shell.custom-bg-active #login-form {
     backdrop-filter: blur(4px);
 }
+
+
+/* ==========================================
+   DEIXAR O FUNDO VISÍVEL ATRÁS DOS PAINÉIS
+   ========================================== */
+body.app-shell.custom-bg-active main,
+body.app-shell.custom-bg-active #cart-panel,
+body.app-shell.custom-bg-active #login-form,
+body.app-shell.custom-bg-active .bg-white,
+body.app-shell.custom-bg-active .bg-gray-50 {
+    background-color: rgba(255, 255, 255, 0.82) !important;
+}
+
+body.app-shell.custom-bg-active #tab-pdv,
+body.app-shell.custom-bg-active #tab-crm,
+body.app-shell.custom-bg-active #tab-menu,
+body.app-shell.custom-bg-active #tab-combos,
+body.app-shell.custom-bg-active #tab-quebras,
+body.app-shell.custom-bg-active #tab-financeiro,
+body.app-shell.custom-bg-active #tab-settings {
+    background-color: rgba(249, 250, 251, 0.72) !important;
+}
+
+body.app-shell.custom-bg-active header,
+body.app-shell.custom-bg-active aside,
+body.app-shell.custom-bg-active .rounded-\[2rem\],
+body.app-shell.custom-bg-active .rounded-\[1\.5rem\] {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
