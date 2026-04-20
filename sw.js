@@ -1,10 +1,12 @@
-const CACHE_NAME = 'cafe-pdv-v1';
+const CACHE_NAME = 'cafe-pdv-v2';
 const assetsToCache = [
     './',
     './index.html',
     './style.css',
     './app.js',
-    './manifest.json'
+    './manifest.json',
+    './favicon.ico',
+    './logo.png'
 ];
 
 self.addEventListener('install', event => {
@@ -13,6 +15,16 @@ self.addEventListener('install', event => {
             return cache.addAll(assetsToCache);
         })
     );
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+    event.waitUntil(
+        caches.keys().then(keys => Promise.all(
+            keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+        ))
+    );
+    self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
