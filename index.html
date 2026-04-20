@@ -167,14 +167,44 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div>
-                    <h3 class="text-xl font-bold mb-4 text-gray-800">Vendas Realizadas</h3>
-                    <div id="sales-history-list" class="flex flex-col gap-3"></div>
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                <div class="xl:col-span-2 space-y-8">
+                    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800">Vendas Realizadas</h3>
+                                <p class="text-sm text-gray-400 font-bold">Filtre por forma de pagamento para auditar o caixa.</p>
+                            </div>
+                            <div class="flex gap-3 flex-wrap">
+                                <select id="finance-payment-filter" class="p-3 rounded-2xl border font-bold text-gray-700 outline-none shadow-sm bg-gray-50 min-w-[220px]">
+                                    <option value="Todos">Todas as formas de pagamento</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="sales-history-list" class="flex flex-col gap-3"></div>
+                    </div>
+
+                    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800">Vendas por Produto</h3>
+                                <p class="text-sm text-gray-400 font-bold">Veja quantidade vendida, faturamento e custo estimado por item.</p>
+                            </div>
+                            <input type="text" id="finance-product-filter" placeholder="Filtrar produto..." class="p-3 rounded-2xl border font-bold text-gray-700 outline-none shadow-sm bg-gray-50 min-w-[220px]">
+                        </div>
+                        <div id="product-sales-summary" class="flex flex-col gap-3"></div>
+                    </div>
                 </div>
-                <div>
-                    <h3 class="text-xl font-bold mb-4 text-purple-700">Contas a Receber (Vouchers Pendentes)</h3>
-                    <div id="vouchers-history-list" class="flex flex-col gap-3"></div>
+
+                <div class="space-y-8">
+                    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
+                        <h3 class="text-xl font-bold mb-4 text-emerald-700">Resumo por Pagamento</h3>
+                        <div id="payment-summary-list" class="flex flex-col gap-3"></div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-4 text-purple-700">Contas a Receber (Vouchers Pendentes)</h3>
+                        <div id="vouchers-history-list" class="flex flex-col gap-3"></div>
+                    </div>
                 </div>
             </div>
         </main>
