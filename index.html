@@ -6,6 +6,10 @@
     <title>Matsucafe ERP - Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="icon" id="app-favicon" href="./favicon.ico">
+    <link rel="apple-touch-icon" id="app-apple-touch-icon" href="./favicon.ico">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" id="meta-theme-color" content="#14532d">
     <link rel="stylesheet" href="style.css">
     <style id="dynamic-theme">
         :root { --theme-color: #14532d; }
@@ -14,11 +18,11 @@
         .theme-border { border-color: var(--theme-color) !important; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans flex h-screen overflow-hidden select-none">
+<body class="bg-gray-100 text-gray-800 font-sans flex h-screen overflow-hidden select-none app-shell">
 
     <div id="login-screen" class="theme-bg absolute inset-0 z-[100] flex items-center justify-center flex-col">
         <form id="login-form" class="bg-white p-10 rounded-[2rem] shadow-2xl w-[400px] max-w-[90%] text-center border-b-8 theme-border">
-            <img src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=200&q=80" alt="Logo" class="w-24 h-24 mx-auto rounded-full object-cover mb-4 shadow-md border-4 border-white">
+            <img id="login-logo" src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=200&q=80" alt="Logo" class="w-24 h-24 mx-auto rounded-full object-cover mb-4 shadow-md border-4 border-white">
             <h2 class="text-3xl font-black text-gray-800 mb-1 tracking-tight">Matsucafe</h2>
             <p class="text-gray-400 mb-8 font-medium">Gestão e PDV</p>
             <input type="email" id="login-email" placeholder="E-mail" required class="w-full p-4 mb-4 bg-gray-50 border rounded-2xl outline-none">
@@ -163,44 +167,14 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                <div class="xl:col-span-2 space-y-8">
-                    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
-                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
-                            <div>
-                                <h3 class="text-xl font-bold text-gray-800">Vendas Realizadas</h3>
-                                <p class="text-sm text-gray-400 font-bold">Filtre por forma de pagamento para auditar o caixa.</p>
-                            </div>
-                            <div class="flex gap-3 flex-wrap">
-                                <select id="finance-payment-filter" class="p-3 rounded-2xl border font-bold text-gray-700 outline-none shadow-sm bg-gray-50 min-w-[220px]">
-                                    <option value="Todos">Todas as formas de pagamento</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div id="sales-history-list" class="flex flex-col gap-3"></div>
-                    </div>
-
-                    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
-                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
-                            <div>
-                                <h3 class="text-xl font-bold text-gray-800">Vendas por Produto</h3>
-                                <p class="text-sm text-gray-400 font-bold">Veja quantidade vendida, faturamento e custo estimado por item.</p>
-                            </div>
-                            <input type="text" id="finance-product-filter" placeholder="Filtrar produto..." class="p-3 rounded-2xl border font-bold text-gray-700 outline-none shadow-sm bg-gray-50 min-w-[220px]">
-                        </div>
-                        <div id="product-sales-summary" class="flex flex-col gap-3"></div>
-                    </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Vendas Realizadas</h3>
+                    <div id="sales-history-list" class="flex flex-col gap-3"></div>
                 </div>
-
-                <div class="space-y-8">
-                    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
-                        <h3 class="text-xl font-bold mb-4 text-emerald-700">Resumo por Pagamento</h3>
-                        <div id="payment-summary-list" class="flex flex-col gap-3"></div>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-bold mb-4 text-purple-700">Contas a Receber (Vouchers Pendentes)</h3>
-                        <div id="vouchers-history-list" class="flex flex-col gap-3"></div>
-                    </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-purple-700">Contas a Receber (Vouchers Pendentes)</h3>
+                    <div id="vouchers-history-list" class="flex flex-col gap-3"></div>
                 </div>
             </div>
         </main>
@@ -209,19 +183,31 @@
             <h2 class="text-3xl font-black text-gray-800 mb-8">Configurações do Sistema</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                    <h3 class="text-lg font-bold mb-4">Cor do Tema</h3>
-                    <div class="flex gap-4">
-                        <button class="w-12 h-12 rounded-full bg-[#14532d] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#14532d"></button>
-                        <button class="w-12 h-12 rounded-full bg-[#7c3aed] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#7c3aed"></button>
-                        <button class="w-12 h-12 rounded-full bg-[#ea580c] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#ea580c"></button>
-                        <button class="w-12 h-12 rounded-full bg-[#be123c] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#be123c"></button>
-                        <button class="w-12 h-12 rounded-full bg-[#1e3a8a] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#1e3a8a"></button>
+                    <h3 class="text-lg font-bold mb-4">Aparência da Interface</h3>
+                    <p class="text-sm text-gray-500 mb-4">Escolha a cor principal e personalize um fundo fosco para deixar o sistema mais moderno.</p>
+                    <div class="flex gap-4 flex-wrap mb-6">
+                        <button class="w-12 h-12 rounded-full bg-[#14532d] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#14532d" title="Verde Matsu"></button>
+                        <button class="w-12 h-12 rounded-full bg-[#7c3aed] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#7c3aed" title="Roxo"></button>
+                        <button class="w-12 h-12 rounded-full bg-[#ea580c] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#ea580c" title="Laranja"></button>
+                        <button class="w-12 h-12 rounded-full bg-[#be123c] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#be123c" title="Vinho"></button>
+                        <button class="w-12 h-12 rounded-full bg-[#1e3a8a] border-4 border-white shadow-md theme-selector hover:scale-110 transition" data-color="#1e3a8a" title="Azul"></button>
+                    </div>
+                    <div class="flex flex-col gap-3">
+                        <textarea id="cfg-bg-image" rows="2" placeholder="Link da imagem de fundo (URL)" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none resize-none text-sm text-gray-600"></textarea>
+                        <div class="bg-gray-50 border rounded-2xl p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <label for="cfg-bg-opacity" class="text-sm font-bold text-gray-700">Opacidade do fundo fosco</label>
+                                <span id="cfg-bg-opacity-value" class="text-sm font-black theme-text">20%</span>
+                            </div>
+                            <input type="range" id="cfg-bg-opacity" min="0" max="0.7" step="0.05" value="0.2" class="w-full accent-[var(--theme-color)]">
+                        </div>
                     </div>
                 </div>
                 <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                    <h3 class="text-lg font-bold mb-4">Dados da Empresa e Recibo</h3>
+                    <h3 class="text-lg font-bold mb-4">Dados da Empresa e Identidade</h3>
                     <div class="flex flex-col gap-3">
-                        <textarea id="cfg-logo" rows="2" placeholder="Link da Logo (URL)" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none resize-none text-sm text-gray-600"></textarea>
+                        <textarea id="cfg-logo" rows="2" placeholder="Link da Logo principal (URL)" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none resize-none text-sm text-gray-600"></textarea>
+                        <textarea id="cfg-favicon" rows="2" placeholder="Link do favicon / ícone do app (URL ou ./favicon.ico)" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none resize-none text-sm text-gray-600"></textarea>
                         <input type="text" id="cfg-nome" placeholder="Nome da Loja" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none font-black text-gray-800">
                         <input type="text" id="cfg-cnpj" placeholder="CNPJ" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none text-gray-700">
                         <textarea id="cfg-endereco" rows="2" placeholder="Endereço Completo" class="w-full p-4 bg-gray-50 border rounded-2xl outline-none resize-none text-gray-700"></textarea>
