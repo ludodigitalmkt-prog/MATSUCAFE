@@ -19,6 +19,8 @@ let currentDateFilterFim = new Date().toISOString().split('T')[0];
 let currentClientHistory = null;
 let appConfig = { nome: "Matsucafe", cnpj: "", endereco: "", telefone: "", msg: "Obrigado e volte sempre!", logo: "", themeColor: "#14532d", backgroundImage: "", backgroundOpacity: 0.2, favicon: "./favicon.ico" };
 let selectedThemeColor = '#14532d';
+let productSalesEntries = [];
+
 
 const tiposComVoucher = ['Colaborador', 'Colaborador Interno', 'Médico', 'Estagiário'];
 
@@ -67,6 +69,20 @@ function applyBrandingAssets() {
     if (faviconEl) faviconEl.setAttribute('href', faviconHref);
     const appleIconEl = document.getElementById('app-apple-touch-icon');
     if (appleIconEl) appleIconEl.setAttribute('href', appConfig.logo || faviconHref);
+}
+
+function formatCurrency(value = 0) {
+    return `R$ ${Number(value || 0).toFixed(2)}`;
+}
+
+function normalizePaymentMethod(method = '') {
+    const raw = String(method || '').trim();
+    if (!raw) return 'Não informado';
+    if (raw.toLowerCase().startsWith('voucher +')) {
+        const complemento = raw.split('+')[1]?.trim();
+        return complemento ? `Voucher + ${complemento}` : 'Voucher';
+    }
+    return raw;
 }
 
 document.querySelectorAll('.theme-selector').forEach(btn => {
@@ -619,6 +635,7 @@ function initDashboard() {
             
             if(history) history.innerHTML = ''; if(vouchersList) vouchersList.innerHTML = '';
             window.dailyPaymentTotals = {}; 
+            const productSalesMap = new Map();
 
             // VENDAS REALIZADAS (LADO ESQUERDO)
             snapVendas.forEach(docSnap => {
@@ -626,7 +643,7 @@ function initDashboard() {
                 if(v.dataSimples >= currentDateFilterInicio && v.dataSimples <= currentDateFilterFim) {
                     totalVendas += v.total; totalCusto += v.custoTotal || 0; 
                     
-                    let metodo = v.pagamento;
+                    let metodo = normalizePaymentMethod(v.pagamento);
                     if (v.complemento > 0 && metodo.includes('Voucher +')) {
                         let compMethod = metodo.split('+')[1].trim();
                         window.dailyPaymentTotals['Voucher'] = (window.dailyPaymentTotals['Voucher'] || 0) + (v.total - v.complemento);
@@ -635,6 +652,18 @@ function initDashboard() {
                         window.dailyPaymentTotals[metodo] = (window.dailyPaymentTotals[metodo] || 0) + v.total;
                     }
                     
+                    if (Array.isArray(v.itens)) {
+                        v.itens.forEach(item => {
+                            const nomeItem = item.nome || 'Item sem nome';
+                            const quantidadeItem = Number(item.qty || item.qtd || 1);
+                            const precoItem = Number(item.preco || 0);
+                            if (!productSalesMap.has(nomeItem)) productSalesMap.set(nomeItem, { name: nomeItem, qty: 0, revenue: 0, cost: 0 });
+                            const resumoItem = productSalesMap.get(nomeItem);
+                            resumoItem.qty += quantidadeItem;
+                            resumoItem.revenue += precoItem * quantidadeItem;
+                        });
+                    }
+
                     let horaStr = '';
                     if (v.data && typeof v.data.toDate === 'function') {
                         horaStr = v.data.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -643,6 +672,7 @@ function initDashboard() {
                     if(history) {
                         const div = document.createElement('div');
                         div.className = "bg-white p-5 rounded-[1.5rem] border border-gray-100 flex justify-between items-center shadow-sm hover:shadow-md transition";
+                        div.dataset.paymentMethod = metodo;
                         
                         div.innerHTML = `
                             <div class="flex-1">
@@ -749,6 +779,16 @@ function initDashboard() {
                     }
                 }
             });
+
+            productSalesEntries = Array.from(productSalesMap.values()).map(entry => {
+                const produtoOriginal = products.find(p => p.nome === entry.name);
+                const custoUnitario = Number(produtoOriginal?.custo || 0);
+                return { ...entry, cost: custoUnitario * entry.qty };
+            }).sort((a, b) => b.revenue - a.revenue);
+            renderPaymentSummary();
+            renderPaymentFilterOptions();
+            renderProductSalesSummary();
+            applyFinancePaymentFilter();
 
             // VOUCHERS PENDENTES (LADO DIREITO)
             snapVouchers.forEach(docSnap => {
@@ -868,6 +908,99 @@ function initDashboard() {
         });
     });
 }
+
+function renderPaymentSummary() {
+    const list = document.getElementById('payment-summary-list');
+    if (!list) return;
+    const entries = Object.entries(window.dailyPaymentTotals || {}).sort((a, b) => b[1] - a[1]);
+    if (!entries.length) {
+        list.innerHTML = '<p class="text-sm text-gray-400 font-bold text-center py-6">Nenhum recebimento encontrado no período.</p>';
+        return;
+    }
+    list.innerHTML = entries.map(([method, total]) => `
+        <div class="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm">
+            <div>
+                <p class="text-xs uppercase text-gray-400 font-black">Forma de pagamento</p>
+                <p class="text-base font-black text-gray-800">${method}</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs uppercase text-gray-400 font-black">Total recebido</p>
+                <p class="text-lg font-black text-emerald-600">${formatCurrency(total)}</p>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderPaymentFilterOptions() {
+    const select = document.getElementById('finance-payment-filter');
+    if (!select) return;
+    const atual = select.value || 'Todos';
+    const methods = ['Todos', ...Object.keys(window.dailyPaymentTotals || {}).sort()];
+    select.innerHTML = methods.map(method => `<option value="${method}">${method}</option>`).join('');
+    select.value = methods.includes(atual) ? atual : 'Todos';
+}
+
+function applyFinancePaymentFilter() {
+    const select = document.getElementById('finance-payment-filter');
+    const cards = document.querySelectorAll('#sales-history-list > div');
+    if (!select || !cards.length) return;
+    const selected = select.value || 'Todos';
+    let visibleCount = 0;
+    cards.forEach(card => {
+        const shouldShow = selected === 'Todos' || card.dataset.paymentMethod === selected;
+        card.style.display = shouldShow ? '' : 'none';
+        if (shouldShow) visibleCount++;
+    });
+    const existingEmpty = document.getElementById('finance-sales-empty');
+    if (existingEmpty) existingEmpty.remove();
+    if (!visibleCount) {
+        const empty = document.createElement('p');
+        empty.id = 'finance-sales-empty';
+        empty.className = 'text-sm text-gray-400 font-bold text-center py-6';
+        empty.textContent = 'Nenhuma venda encontrada para essa forma de pagamento no período.';
+        document.getElementById('sales-history-list')?.appendChild(empty);
+    }
+}
+
+function renderProductSalesSummary() {
+    const list = document.getElementById('product-sales-summary');
+    if (!list) return;
+    const term = (document.getElementById('finance-product-filter')?.value || '').trim().toLowerCase();
+    const filtered = productSalesEntries.filter(entry => !term || entry.name.toLowerCase().includes(term));
+    if (!filtered.length) {
+        list.innerHTML = '<p class="text-sm text-gray-400 font-bold text-center py-6">Nenhum produto encontrado nesse filtro.</p>';
+        return;
+    }
+    list.innerHTML = filtered.map(entry => `
+        <div class="bg-gray-50 border border-gray-100 rounded-2xl p-4 shadow-sm">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-base font-black text-gray-800">${entry.name}</p>
+                    <p class="text-xs uppercase text-gray-400 font-black mt-1">Quantidade vendida: ${entry.qty}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs uppercase text-gray-400 font-black">Faturamento</p>
+                    <p class="text-lg font-black text-green-600">${formatCurrency(entry.revenue)}</p>
+                </div>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                <div class="bg-white rounded-xl border border-gray-100 p-3">
+                    <p class="text-[10px] uppercase text-gray-400 font-black">Custo estimado</p>
+                    <p class="font-black text-orange-500">${formatCurrency(entry.cost)}</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-100 p-3">
+                    <p class="text-[10px] uppercase text-gray-400 font-black">Margem estimada</p>
+                    <p class="font-black text-blue-600">${formatCurrency(entry.revenue - entry.cost)}</p>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+const financePaymentFilter = document.getElementById('finance-payment-filter');
+if (financePaymentFilter) financePaymentFilter.addEventListener('change', applyFinancePaymentFilter);
+const financeProductFilter = document.getElementById('finance-product-filter');
+if (financeProductFilter) financeProductFilter.addEventListener('input', renderProductSalesSummary);
 
 // ==========================================
 // FUNÇÃO: VER PEDIDO E REMOVER ITENS
