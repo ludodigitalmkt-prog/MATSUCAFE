@@ -47,13 +47,21 @@ function applyBackgroundSettings(imageUrl, opacityValue) {
     const body = document.body;
     if (!body) return;
     const safeOpacity = Math.min(0.85, Math.max(0, Number(opacityValue || 0.2)));
+
     if (imageUrl) {
-        body.style.setProperty('--app-bg-image', `url('${String(imageUrl).replace(/'/g, "\'")}')`);
-        body.style.setProperty('--app-bg-opacity', safeOpacity.toString());
+        const safeUrl = String(imageUrl).replace(/"/g, '%22');
+        body.style.backgroundImage = `linear-gradient(rgba(255,255,255,${safeOpacity}), rgba(255,255,255,${safeOpacity})), url("${safeUrl}")`;
+        body.style.backgroundSize = 'cover';
+        body.style.backgroundPosition = 'center';
+        body.style.backgroundRepeat = 'no-repeat';
+        body.style.backgroundAttachment = 'fixed';
         body.classList.add('custom-bg-active');
     } else {
-        body.style.setProperty('--app-bg-image', 'none');
-        body.style.setProperty('--app-bg-opacity', '0');
+        body.style.backgroundImage = '';
+        body.style.backgroundSize = '';
+        body.style.backgroundPosition = '';
+        body.style.backgroundRepeat = '';
+        body.style.backgroundAttachment = '';
         body.classList.remove('custom-bg-active');
     }
 }
