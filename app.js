@@ -660,7 +660,6 @@ window.baixaVoucher = async (id, colaborador, valor, nroPedido) => {
     if(confirm(`Confirmar o RECEBIMENTO FINANCEIRO de R$ ${valor.toFixed(2)} referente a ${colaborador}?\n\nO limite do colaborador será restaurado e o valor entrará no faturamento de HOJE.`)) {
         await updateDoc(doc(db, "vouchers_pendentes", id), { status: 'pago', dataPagamento: new Date().toISOString() });
         
-        // CORREÇÃO: DEVOLVE O SALDO PARA O COLABORADOR
         const c = clients.find(cli => cli.nome === colaborador);
         if(c) {
             const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(valor);
@@ -676,7 +675,7 @@ window.baixaVoucher = async (id, colaborador, valor, nroPedido) => {
             pagamento: 'Recebimento Voucher', 
             cpf: '', 
             complemento: 0, 
-            isVoucherPgto: true, // Isso garante que o histórico vai ocultar a entrada!
+            isVoucherPgto: true,
             data: serverTimestamp(), 
             dataSimples: new Date().toISOString().split('T')[0], 
             itens: [{nome: `Pgto Voucher (Ref. #${nroPedido})`, qty: 1, preco: parseFloat(valor)}]
@@ -699,7 +698,6 @@ window.baixaTodosVouchers = async (colaborador) => {
             await updateDoc(doc(db, "vouchers_pendentes", docSnap.id), { status: 'pago', dataPagamento: new Date().toISOString() });
         });
         
-        // CORREÇÃO: DEVOLVE O SALDO TOTAL PARA O COLABORADOR
         const c = clients.find(cli => cli.nome === colaborador);
         if(c && valorTotal > 0) {
             const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(valorTotal);
@@ -716,7 +714,7 @@ window.baixaTodosVouchers = async (colaborador) => {
                 pagamento: 'Recebimento Voucher', 
                 cpf: '', 
                 complemento: 0, 
-                isVoucherPgto: true, // Isso garante que o histórico vai ocultar a entrada!
+                isVoucherPgto: true,
                 data: serverTimestamp(), 
                 dataSimples: new Date().toISOString().split('T')[0], 
                 itens: [{nome: `Pgto Múltiplo de Vouchers`, qty: 1, preco: parseFloat(valorTotal)}]
@@ -795,7 +793,6 @@ window.printVouchersReport = async () => {
                 <span>${item.dataStr.split('-').reverse().join('/')} ${horaStrPend} | #${item.nroPedido} | ${item.status.toUpperCase()}</span>
                 <span>R$ ${item.valor.toFixed(2)}</span>
             </div>`;
-            // MOSTRANDO OS ITENS NO RELATÓRIO IMPRESSO
             if (item.itensResumo) {
                 reportHtml += `<div style="font-size: 10px; color: #666; margin-left: 10px; margin-bottom: 4px; font-style: italic;">- ${item.itensResumo}</div>`;
             }
@@ -997,7 +994,7 @@ function initDashboard() {
             renderProductSalesSummary();
             applyFinancePaymentFilter();
 
-            // VOUCHERS PENDENTES (LADO DIREITO - AGRUPADOS E COM ITENS EXIBIDOS)
+            // VOUCHERS PENDENTES (LADO DIREITO - AGRUPADOS E COM AUTO-RECUPERAÇÃO DE ITENS)
             const vouchersGrouped = {};
             
             snapVouchers.forEach(docSnap => {
@@ -1028,6 +1025,26 @@ function initDashboard() {
                             horaStrPend = pend.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                         }
                         
+                        // MÁGICA: Auto-recuperação de itens antigos que não tinham sido salvos antes da atualização!
+                        if (!pend.itensResumo) {
+                            getDocs(query(collection(db, "vendas"), where("nroPedido", "==", pend.nroPedido))).then(vSnap => {
+                                if (!vSnap.empty) {
+                                    const vData = vSnap.docs[0].data();
+                                    if (vData.itens) {
+                                        const resumo = vData.itens.map(i => `${i.qty||i.qtd||1}x ${i.nome}`).join(', ');
+                                        const el = document.getElementById(`resumo-${pend.id}`);
+                                        if(el) el.innerText = `- ${resumo}`;
+                                        // Salva no banco para não precisar puxar de novo na próxima vez
+                                        updateDoc(doc(db, "vouchers_pendentes", pend.id), { itensResumo: resumo });
+                                    }
+                                }
+                            });
+                        }
+
+                        const resumoDisplay = pend.itensResumo 
+                            ? `<p class="text-[10px] text-gray-500 italic border-t border-purple-50 pt-2">- ${pend.itensResumo}</p>` 
+                            : `<p class="text-[10px] text-gray-400 italic border-t border-purple-50 pt-2" id="resumo-${pend.id}">Buscando itens antigos...</p>`;
+
                         itemsHtml += `
                             <div class="bg-white p-3 rounded-xl flex flex-col shadow-sm border border-purple-100 gap-2">
                                 <div class="flex flex-wrap md:flex-nowrap justify-between items-center gap-2">
@@ -1043,7 +1060,7 @@ function initDashboard() {
                                         <button class="bg-green-500 hover:bg-green-600 transition text-white font-black text-xs px-3 py-2 rounded-lg shadow-sm flex items-center gap-1" onclick="window.baixaVoucher('${pend.id}', '${pend.colaborador}', ${pend.valor}, '${pend.nroPedido}')"><i class="ph ph-check-circle text-sm"></i> Baixa</button>
                                     </div>
                                 </div>
-                                ${pend.itensResumo ? `<p class="text-[10px] text-gray-500 italic border-t border-purple-50 pt-2">- ${pend.itensResumo}</p>` : ''}
+                                ${resumoDisplay}
                             </div>
                         `;
                     });
@@ -1413,7 +1430,6 @@ if(btnCheckout) {
         const valorDescontoDb = parseFloat(document.getElementById('pdv-desconto') ? document.getElementById('pdv-desconto').value : 0) || 0;
         const motivoDescontoDb = document.getElementById('pdv-desconto-motivo') ? document.getElementById('pdv-desconto-motivo').value : '';
 
-        // NOVIDADE AQUI: Salvamos os itens para mostrar no card do relatório
         const itensResumo = cart.map(i => `${i.qty}x ${i.nome}`).join(', ');
 
         const c = clients.find(cli => cli.nome === clienteNome);
@@ -1461,7 +1477,7 @@ if(btnCheckout) {
                     nroPedido: nro, 
                     dataStr: dataAtualStr, 
                     timestamp: serverTimestamp(),
-                    itensResumo: itensResumo // <-- Salvando os itens
+                    itensResumo: itensResumo
                 });
             }
         }
