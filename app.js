@@ -632,21 +632,60 @@ if(filtroDataInicio && filtroDataFim) {
 }
 
 // Funções globais para manipulação de Vouchers
-window.baixaVoucher = async (id) => {
-    if(confirm(`Confirmar o RECEBIMENTO FINANCEIRO do valor deste pedido?\n\nEle será removido dos pendentes. OBS: O limite do colaborador NÃO será alterado agora, pois já foi debitado na hora da compra.`)) {
+window.baixaVoucher = async (id, colaborador, valor, nroPedido) => {
+    if(confirm(`Confirmar o RECEBIMENTO FINANCEIRO de R$ ${valor.toFixed(2)} referente a ${colaborador}?\n\nO valor entrará no faturamento de HOJE.`)) {
         await updateDoc(doc(db, "vouchers_pendentes", id), { status: 'pago', dataPagamento: new Date().toISOString() });
-        alert('Baixa realizada com sucesso! O valor não está mais pendente.');
+        
+        const nroPagamento = Math.floor(1000 + Math.random() * 9000);
+        await addDoc(collection(db, "vendas"), {
+            nroPedido: `PGTO-${nroPagamento}`, 
+            total: parseFloat(valor), 
+            custoTotal: 0, 
+            cliente: colaborador, 
+            pagamento: 'Recebimento Voucher', 
+            cpf: '', 
+            complemento: 0, 
+            isVoucherPgto: true,
+            data: serverTimestamp(), 
+            dataSimples: new Date().toISOString().split('T')[0], 
+            itens: [{nome: `Pgto Voucher (Ref. #${nroPedido})`, qty: 1, preco: parseFloat(valor)}]
+        });
+        
+        alert('Baixa realizada com sucesso! O valor já subiu no faturamento de hoje.');
     }
 };
 
 window.baixaTodosVouchers = async (colaborador) => {
-    if(confirm(`Confirmar o RECEBIMENTO FINANCEIRO de TODOS os vouchers pendentes de ${colaborador}?\n\nOs limites de consumo dele não serão afetados, apenas os títulos financeiros serão baixados.`)) {
+    if(confirm(`Confirmar o RECEBIMENTO FINANCEIRO de TODOS os vouchers pendentes de ${colaborador}?`)) {
         const pendQuery = query(collection(db, "vouchers_pendentes"), where("colaborador", "==", colaborador), where("status", "==", "pendente"));
         const pendSnap = await getDocs(pendQuery);
+        
+        let valorTotal = 0;
+        
         pendSnap.forEach(async (docSnap) => {
+            const pendData = docSnap.data();
+            valorTotal += pendData.valor;
             await updateDoc(doc(db, "vouchers_pendentes", docSnap.id), { status: 'pago', dataPagamento: new Date().toISOString() });
         });
-        alert('Baixa de todos os pedidos realizada com sucesso!');
+        
+        if(valorTotal > 0) {
+            const nroPagamento = Math.floor(1000 + Math.random() * 9000);
+            await addDoc(collection(db, "vendas"), {
+                nroPedido: `PGTO-${nroPagamento}`, 
+                total: parseFloat(valorTotal), 
+                custoTotal: 0, 
+                cliente: colaborador, 
+                pagamento: 'Recebimento Voucher', 
+                cpf: '', 
+                complemento: 0, 
+                isVoucherPgto: true,
+                data: serverTimestamp(), 
+                dataSimples: new Date().toISOString().split('T')[0], 
+                itens: [{nome: `Pgto Múltiplo de Vouchers`, qty: 1, preco: parseFloat(valorTotal)}]
+            });
+        }
+        
+        alert('Baixa de todos os pedidos realizada com sucesso! Faturamento atualizado.');
     }
 };
 
@@ -959,7 +998,7 @@ function initDashboard() {
                                 </div>
                                 <div class="flex gap-2 w-full md:w-auto justify-end">
                                     <button class="bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition p-2 rounded-lg shadow-sm" title="Corrigir Pagamento (Tirar de Voucher)" onclick="window.editVoucher('${pend.id}', '${pend.colaborador}', '${pend.nroPedido}', ${pend.valorRestaurar || pend.valor})"><i class="ph ph-pencil-simple text-sm"></i></button>
-                                    <button class="bg-green-500 hover:bg-green-600 transition text-white font-black text-xs px-3 py-2 rounded-lg shadow-sm flex items-center gap-1" onclick="window.baixaVoucher('${pend.id}')"><i class="ph ph-check-circle text-sm"></i> Baixa</button>
+                                    <button class="bg-green-500 hover:bg-green-600 transition text-white font-black text-xs px-3 py-2 rounded-lg shadow-sm flex items-center gap-1" onclick="window.baixaVoucher('${pend.id}', '${pend.colaborador}', ${pend.valor}, '${pend.nroPedido}')"><i class="ph ph-check-circle text-sm"></i> Baixa</button>
                                 </div>
                             </div>
                         `;
@@ -1233,7 +1272,7 @@ function buildCategoryTabs() {
     const categorias = ["Todos", "Combos", ...new Set(products.map(p => p.categoria))];
     const container = document.getElementById('category-tabs');
     if(!container) return;
-    container.innerHTML = categorias.map(c => `<button class="px-6 py-2 rounded-xl font-bold uppercase text-sm whitespace-nowrap bg-gray-100 text-gray-500 shadow-sm transition cat-btn" data-cat="${c}">${c}</button>`).join('');
+    container.innerHTML = categorias.map(c => `<button class="px-6 py-2 rounded-xl font-bold uppercase text-sm whitespace-nowrap bg-gray-100 text-gray-500 shadow-sm transition cat-btn" data-cat="${c}"> ${c}</button>`).join('');
     document.querySelectorAll('.cat-btn').forEach(btn => {
         btn.onclick = () => {
             document.querySelectorAll('.cat-btn').forEach(b => { b.classList.replace('theme-bg', 'bg-gray-100'); b.classList.replace('text-white', 'text-gray-500'); });
