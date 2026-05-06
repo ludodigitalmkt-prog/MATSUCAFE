@@ -321,7 +321,9 @@ window.loadClientHistory = async () => {
     const q = query(collection(db, "vendas"), where("cliente", "==", currentClientHistory));
     const snap = await getDocs(q);
     
-    let total = 0; const lista = document.getElementById('hist-lista'); 
+    let totalVoucher = 0; 
+    let totalOutros = 0; 
+    const lista = document.getElementById('hist-lista'); 
     if(!lista) return;
     lista.innerHTML = '';
     
@@ -329,10 +331,14 @@ window.loadClientHistory = async () => {
         const v = doc.data();
         if(inicio && fim && (v.dataSimples < inicio || v.dataSimples > fim)) return; 
         
-        // CORREÇÃO: Esconde as "vendas" que são apenas Baixa Financeira
-        if(v.isVoucherPgto) return;
+        // Esconde as transações de "Baixa de Pagamento" para não duplicar o histórico visual
+        if(v.isVoucherPgto) return; 
         
-        total += v.total;
+        if (v.pagamento.toLowerCase().includes('voucher')) {
+            totalVoucher += v.total;
+        } else {
+            totalOutros += v.total;
+        }
 
         let itensStr = '';
         if(v.itens) {
@@ -349,7 +355,7 @@ window.loadClientHistory = async () => {
                         <p class="font-black text-gray-800">Pedido #${v.nroPedido}</p>
                         <p class="text-xs text-gray-500 font-bold mt-1">${v.dataSimples.split('-').reverse().join('/')} - Pgto: ${v.pagamento}</p>
                     </div>
-                    <div class="font-black text-green-600 text-lg">R$ ${v.total.toFixed(2)}</div>
+                    <div class="font-black ${v.pagamento.toLowerCase().includes('voucher') ? 'text-purple-600' : 'text-green-600'} text-lg">R$ ${v.total.toFixed(2)}</div>
                 </div>
                 ${itensStr ? `
                 <div class="mt-2 border-t pt-2 border-gray-200">
@@ -359,7 +365,12 @@ window.loadClientHistory = async () => {
             </div>
         `;
     });
-    document.getElementById('hist-total').innerText = `R$ ${total.toFixed(2)}`;
+    
+    // Mostra os totais SEPARADOS para não confundir o que é fiado e o que foi PIX
+    document.getElementById('hist-total').innerHTML = `
+        <span class="text-purple-600 mr-3 block md:inline">Voucher (Fiado): R$ ${totalVoucher.toFixed(2)}</span> 
+        <span class="text-green-600 block md:inline">Pagos na Hora: R$ ${totalOutros.toFixed(2)}</span>
+    `;
     if(lista.innerHTML === '') lista.innerHTML = '<p class="text-gray-400 text-center text-sm p-4 font-bold">Nenhuma compra encontrada no período.</p>';
 };
 
@@ -370,16 +381,21 @@ window.printClientHistory = async () => {
     const q = query(collection(db, "vendas"), where("cliente", "==", currentClientHistory));
     const snap = await getDocs(q);
 
-    let total = 0; let reportHtml = '';
+    let totalVoucher = 0;
+    let totalOutros = 0; 
+    let reportHtml = '';
 
     snap.forEach(doc => {
         const v = doc.data();
         if(inicio && fim && (v.dataSimples < inicio || v.dataSimples > fim)) return;
         
-        // CORREÇÃO: Esconde da impressão as baixas financeiras
         if(v.isVoucherPgto) return;
         
-        total += v.total;
+        if (v.pagamento.toLowerCase().includes('voucher')) {
+            totalVoucher += v.total;
+        } else {
+            totalOutros += v.total;
+        }
 
         let itemsHtml = '';
         if(v.itens) {
@@ -417,7 +433,8 @@ window.printClientHistory = async () => {
             </div>
             <div class="receipt-divider"></div>
             ${reportHtml || '<p style="text-align:center; font-size:12px;">Nenhum consumo no período.</p>'}
-            <div class="receipt-total"><span>TOTAL GASTO:</span><span>R$ ${total.toFixed(2)}</span></div>
+            <div class="receipt-total" style="font-size: 12px; margin-top: 10px;"><span>TOTAL EM VOUCHER:</span><span>R$ ${totalVoucher.toFixed(2)}</span></div>
+            <div class="receipt-total" style="font-size: 12px;"><span>TOTAL OUTROS PGTOS:</span><span>R$ ${totalOutros.toFixed(2)}</span></div>
             <div class="receipt-footer"><p style="margin-top: 40px;">___________________________________</p><p style="font-weight: bold; margin-top:5px;">ASSINATURA</p></div><br>
         `;
         setTimeout(() => { window.print(); }, 300);
@@ -778,6 +795,10 @@ window.printVouchersReport = async () => {
                 <span>${item.dataStr.split('-').reverse().join('/')} ${horaStrPend} | #${item.nroPedido} | ${item.status.toUpperCase()}</span>
                 <span>R$ ${item.valor.toFixed(2)}</span>
             </div>`;
+            // MOSTRANDO OS ITENS NO RELATÓRIO IMPRESSO
+            if (item.itensResumo) {
+                reportHtml += `<div style="font-size: 10px; color: #666; margin-left: 10px; margin-bottom: 4px; font-style: italic;">- ${item.itensResumo}</div>`;
+            }
         });
         reportHtml += `</div>`;
     }
@@ -875,7 +896,6 @@ function initDashboard() {
                             </div>
                         `;
 
-                        // MÁGICA DE ABRIR O PEDIDO E EDITAR ITENS
                         div.querySelector('.btn-view').onclick = () => window.openOrderDetails(docSnap.id, v);
 
                         div.querySelector('.btn-print').onclick = () => {
@@ -977,7 +997,7 @@ function initDashboard() {
             renderProductSalesSummary();
             applyFinancePaymentFilter();
 
-            // VOUCHERS PENDENTES (LADO DIREITO - AGRUPADOS E CORRIGIDOS)
+            // VOUCHERS PENDENTES (LADO DIREITO - AGRUPADOS E COM ITENS EXIBIDOS)
             const vouchersGrouped = {};
             
             snapVouchers.forEach(docSnap => {
@@ -1009,18 +1029,21 @@ function initDashboard() {
                         }
                         
                         itemsHtml += `
-                            <div class="bg-white p-3 rounded-xl flex flex-wrap md:flex-nowrap justify-between items-center shadow-sm border border-purple-100 gap-2">
-                                <div class="w-full md:w-auto">
-                                    <p class="text-sm font-bold text-gray-800">Pedido #${pend.nroPedido}</p>
-                                    <p class="text-[10px] text-gray-500 font-bold">${pend.dataStr.split('-').reverse().join('/')} ${horaStrPend}</p>
+                            <div class="bg-white p-3 rounded-xl flex flex-col shadow-sm border border-purple-100 gap-2">
+                                <div class="flex flex-wrap md:flex-nowrap justify-between items-center gap-2">
+                                    <div class="w-full md:w-auto">
+                                        <p class="text-sm font-bold text-gray-800">Pedido #${pend.nroPedido}</p>
+                                        <p class="text-[10px] text-gray-500 font-bold">${pend.dataStr.split('-').reverse().join('/')} ${horaStrPend}</p>
+                                    </div>
+                                    <div class="text-left md:text-right flex-1">
+                                        <p class="font-black text-purple-600">R$ ${pend.valor.toFixed(2)}</p>
+                                    </div>
+                                    <div class="flex gap-2 w-full md:w-auto justify-end">
+                                        <button class="bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition p-2 rounded-lg shadow-sm" title="Corrigir Pagamento (Tirar de Voucher)" onclick="window.editVoucher('${pend.id}', '${pend.colaborador}', '${pend.nroPedido}', ${pend.valorRestaurar || pend.valor})"><i class="ph ph-pencil-simple text-sm"></i></button>
+                                        <button class="bg-green-500 hover:bg-green-600 transition text-white font-black text-xs px-3 py-2 rounded-lg shadow-sm flex items-center gap-1" onclick="window.baixaVoucher('${pend.id}', '${pend.colaborador}', ${pend.valor}, '${pend.nroPedido}')"><i class="ph ph-check-circle text-sm"></i> Baixa</button>
+                                    </div>
                                 </div>
-                                <div class="text-left md:text-right flex-1">
-                                    <p class="font-black text-purple-600">R$ ${pend.valor.toFixed(2)}</p>
-                                </div>
-                                <div class="flex gap-2 w-full md:w-auto justify-end">
-                                    <button class="bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition p-2 rounded-lg shadow-sm" title="Corrigir Pagamento (Tirar de Voucher)" onclick="window.editVoucher('${pend.id}', '${pend.colaborador}', '${pend.nroPedido}', ${pend.valorRestaurar || pend.valor})"><i class="ph ph-pencil-simple text-sm"></i></button>
-                                    <button class="bg-green-500 hover:bg-green-600 transition text-white font-black text-xs px-3 py-2 rounded-lg shadow-sm flex items-center gap-1" onclick="window.baixaVoucher('${pend.id}', '${pend.colaborador}', ${pend.valor}, '${pend.nroPedido}')"><i class="ph ph-check-circle text-sm"></i> Baixa</button>
-                                </div>
+                                ${pend.itensResumo ? `<p class="text-[10px] text-gray-500 italic border-t border-purple-50 pt-2">- ${pend.itensResumo}</p>` : ''}
                             </div>
                         `;
                     });
@@ -1175,20 +1198,16 @@ window.openOrderDetails = (vendaId, venda) => {
                 <button class="bg-red-50 text-red-400 p-2 rounded-lg hover:bg-red-500 hover:text-white transition btn-rem-item" title="Remover item e devolver ao estoque"><i class="ph ph-trash text-lg"></i></button>
             `;
             
-            // FUNÇÃO PARA REMOVER O ITEM ESPECÍFICO
             div.querySelector('.btn-rem-item').onclick = async () => {
                 if(confirm(`Deseja realmente remover "${item.nome}" deste pedido?\n\n- O valor será abatido do caixa.\n- O produto voltará para o estoque.`)) {
-                    
                     const valorItem = item.preco * qtde;
-                    const novosItens = venda.itens.filter((_, i) => i !== index); // Remove apenas este item
+                    const novosItens = venda.itens.filter((_, i) => i !== index);
                     
-                    // Atualiza a venda principal reduzindo o total
                     await updateDoc(doc(db, "vendas", vendaId), {
                         itens: novosItens,
                         total: venda.total - valorItem
                     });
 
-                    // Se a venda for voucher, tem que devolver o limite também pro cliente
                     if (venda.pagamento.toLowerCase().includes('voucher')) {
                          const pendQuery = query(collection(db, "vouchers_pendentes"), where("nroPedido", "==", venda.nroPedido));
                          const pendSnap = await getDocs(pendQuery);
@@ -1200,7 +1219,6 @@ window.openOrderDetails = (vendaId, venda) => {
                                  const novoSaldo = parseFloat(c.saldo_voucher || 0) + valorItem;
                                  await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
                              }
-                             // Atualiza o valor da pendência no financeiro
                              await updateDoc(doc(db, "vouchers_pendentes", pendDoc.id), {
                                  valor: pendData.valor - valorItem,
                                  valorRestaurar: (pendData.valorRestaurar || pendData.valor) - valorItem
@@ -1208,13 +1226,12 @@ window.openOrderDetails = (vendaId, venda) => {
                          }
                     }
 
-                    // Devolve produto para o estoque
                     const cQuery = query(collection(db, "combos"), where("nome", "==", item.nome));
                     const cSnap = await getDocs(cQuery);
-                    if (!cSnap.empty) { // Se for combo, devolve os sub-itens
+                    if (!cSnap.empty) { 
                         const comboData = cSnap.docs[0].data();
                         for (const subItem of comboData.itens) await window.processarEstornoManual(subItem.nome, qtde);
-                    } else { // Se for produto normal
+                    } else {
                         await window.processarEstornoManual(item.nome, qtde);
                     }
                     
@@ -1286,9 +1303,6 @@ if(btnPrintDay) {
     };
 }
 
-// ==========================================
-// PDV - EXIBINDO ESTOQUE E BLOQUEANDO ZERADOS
-// ==========================================
 function buildCategoryTabs() {
     const categorias = ["Todos", "Combos", ...new Set(products.map(p => p.categoria))];
     const container = document.getElementById('category-tabs');
@@ -1363,25 +1377,23 @@ function updateCart() {
     const list = document.getElementById('cart-items'); 
     if(!list) return;
     list.innerHTML = ''; 
-    let subtotal = 0; // Usamos subtotal antes do desconto
+    let subtotal = 0;
 
     cart.forEach(item => {
         subtotal += item.preco * item.qty;
         list.innerHTML += `<div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-2"><div class="flex-1"><p class="font-black text-gray-800 text-sm leading-tight">${item.qty}x ${item.nome}</p><p class="text-xs text-gray-500 font-bold mt-1">R$ ${(item.preco * item.qty).toFixed(2)}</p></div><button onclick="window.removeCartItem('${item.id}')" class="text-red-400 hover:text-red-600 bg-red-50 p-2 rounded-xl transition"><i class="ph ph-x-circle text-lg"></i></button></div>`;
     });
 
-    // Puxa o valor digitado no desconto
     const descInput = document.getElementById('pdv-desconto');
     let valorDesconto = parseFloat(descInput && descInput.value ? descInput.value : 0);
-    if (valorDesconto > subtotal) valorDesconto = subtotal; // Impede que o desconto seja maior que a venda
+    if (valorDesconto > subtotal) valorDesconto = subtotal;
 
-    cartTotal = subtotal - valorDesconto; // cartTotal passa a ser o valor FINAL a ser pago
+    cartTotal = subtotal - valorDesconto; 
 
     if(document.getElementById('subtotal')) document.getElementById('subtotal').innerText = `R$ ${subtotal.toFixed(2)}`;
     if(document.getElementById('total')) document.getElementById('total').innerText = `R$ ${cartTotal.toFixed(2)}`;
 }
 
-// Escuta a digitação no campo de desconto para recalcular o total na hora
 const descInput = document.getElementById('pdv-desconto');
 if(descInput) descInput.addEventListener('input', updateCart);
 
@@ -1400,6 +1412,9 @@ if(btnCheckout) {
         const dataAtualStr = new Date().toISOString().split('T')[0];
         const valorDescontoDb = parseFloat(document.getElementById('pdv-desconto') ? document.getElementById('pdv-desconto').value : 0) || 0;
         const motivoDescontoDb = document.getElementById('pdv-desconto-motivo') ? document.getElementById('pdv-desconto-motivo').value : '';
+
+        // NOVIDADE AQUI: Salvamos os itens para mostrar no card do relatório
+        const itensResumo = cart.map(i => `${i.qty}x ${i.nome}`).join(', ');
 
         const c = clients.find(cli => cli.nome === clienteNome);
         let valorPagoNaDiferenca = 0;
@@ -1445,7 +1460,8 @@ if(btnCheckout) {
                     status: 'pendente', 
                     nroPedido: nro, 
                     dataStr: dataAtualStr, 
-                    timestamp: serverTimestamp()
+                    timestamp: serverTimestamp(),
+                    itensResumo: itensResumo // <-- Salvando os itens
                 });
             }
         }
