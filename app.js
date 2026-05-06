@@ -21,7 +21,6 @@ let appConfig = { nome: "Matsucafe", cnpj: "", endereco: "", telefone: "", msg: 
 let selectedThemeColor = '#14532d';
 let productSalesEntries = [];
 
-
 const tiposComVoucher = ['Colaborador', 'Colaborador Interno', 'Médico', 'Estagiário'];
 
 // ==========================================
@@ -632,6 +631,126 @@ if(filtroDataInicio && filtroDataFim) {
     filtroDataFim.onchange = (e) => { currentDateFilterFim = e.target.value; initDashboard(); };
 }
 
+// Funções globais para manipulação de Vouchers
+window.baixaVoucher = async (id) => {
+    if(confirm(`Confirmar o RECEBIMENTO FINANCEIRO do valor deste pedido?\n\nEle será removido dos pendentes. OBS: O limite do colaborador NÃO será alterado agora, pois já foi debitado na hora da compra.`)) {
+        await updateDoc(doc(db, "vouchers_pendentes", id), { status: 'pago', dataPagamento: new Date().toISOString() });
+        alert('Baixa realizada com sucesso! O valor não está mais pendente.');
+    }
+};
+
+window.baixaTodosVouchers = async (colaborador) => {
+    if(confirm(`Confirmar o RECEBIMENTO FINANCEIRO de TODOS os vouchers pendentes de ${colaborador}?\n\nOs limites de consumo dele não serão afetados, apenas os títulos financeiros serão baixados.`)) {
+        const pendQuery = query(collection(db, "vouchers_pendentes"), where("colaborador", "==", colaborador), where("status", "==", "pendente"));
+        const pendSnap = await getDocs(pendQuery);
+        pendSnap.forEach(async (docSnap) => {
+            await updateDoc(doc(db, "vouchers_pendentes", docSnap.id), { status: 'pago', dataPagamento: new Date().toISOString() });
+        });
+        alert('Baixa de todos os pedidos realizada com sucesso!');
+    }
+};
+
+window.editVoucher = async (docId, colaborador, nroPedido, valorRestaurar) => {
+    const novoPgto = prompt(`Lançamento atual: VOUCHER PENDENTE\n\nSe o cliente NÃO pagou com voucher e houve um erro na frente de caixa, digite a forma correta que ele pagou (Ex: PIX, Crédito, Dinheiro):`);
+    if(novoPgto && novoPgto.trim() !== "" && !novoPgto.toLowerCase().includes('voucher')) {
+        if(confirm(`Mudar este lançamento para ${novoPgto.trim().toUpperCase()}?\n\n- O limite de voucher dele será devolvido.\n- A venda ficará como Cliente Avulso na lista principal.`)) {
+            const c = clients.find(cli => cli.nome === colaborador);
+            if(c) {
+                const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(valorRestaurar);
+                await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
+            }
+            const vQuery = query(collection(db, "vendas"), where("nroPedido", "==", nroPedido));
+            const vSnap = await getDocs(vQuery);
+            if(!vSnap.empty) {
+                const vendaRef = vSnap.docs[0];
+                await updateDoc(doc(db, "vendas", vendaRef.id), { pagamento: novoPgto.trim(), cliente: "Cliente Avulso" });
+            }
+            await deleteDoc(doc(db, "vouchers_pendentes", docId));
+            alert("Lançamento corrigido com sucesso! O limite retornou para o colaborador.");
+        }
+    }
+};
+
+window.printVouchersReport = async () => {
+    const dataInicio = document.getElementById('filtro-data-inicio').value;
+    const dataFim = document.getElementById('filtro-data-fim').value;
+
+    const statusFiltro = prompt("Qual relatório deseja imprimir?\n1 - Apenas Vouchers Pendentes (A Receber)\n2 - Apenas Vouchers Pagos (Já Recebidos)\n3 - Geral (Todos os Status)", "1");
+    if (!statusFiltro) return; 
+
+    let statusCheck = ['pendente'];
+    if (statusFiltro === "2") statusCheck = ['pago'];
+    if (statusFiltro === "3") statusCheck = ['pendente', 'pago'];
+
+    const vQuery = collection(db, "vouchers_pendentes");
+    const vSnap = await getDocs(vQuery);
+    
+    let reportHtml = '';
+    let totalReport = 0;
+    let count = 0;
+    
+    const listVouchers = [];
+    vSnap.forEach(docSnap => {
+        const pend = docSnap.data();
+        if (pend.dataStr >= dataInicio && pend.dataStr <= dataFim && statusCheck.includes(pend.status)) {
+            listVouchers.push(pend);
+        }
+    });
+
+    const byColab = {};
+    listVouchers.forEach(v => {
+        if(!byColab[v.colaborador]) byColab[v.colaborador] = { total: 0, items: [] };
+        byColab[v.colaborador].total += v.valor;
+        byColab[v.colaborador].items.push(v);
+        totalReport += v.valor;
+        count++;
+    });
+
+    for (const colab in byColab) {
+        reportHtml += `<div style="margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 8px;">
+            <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${colab} <span style="float:right">Total: R$ ${byColab[colab].total.toFixed(2)}</span></div>`;
+        byColab[colab].items.forEach(item => {
+            let horaStrPend = '';
+            if (item.timestamp && typeof item.timestamp.toDate === 'function') {
+                horaStrPend = item.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
+            reportHtml += `<div style="display: flex; justify-content: space-between; font-size: 12px; margin-left: 10px; margin-bottom: 3px; color: #333;">
+                <span>${item.dataStr.split('-').reverse().join('/')} ${horaStrPend} | #${item.nroPedido} | ${item.status.toUpperCase()}</span>
+                <span>R$ ${item.valor.toFixed(2)}</span>
+            </div>`;
+        });
+        reportHtml += `</div>`;
+    }
+
+    if(count === 0) reportHtml = '<p style="text-align:center; font-size:12px; margin-top:20px;">Nenhum voucher encontrado neste período com esse status.</p>';
+
+    let nomeStatus = "PENDENTES A RECEBER";
+    if (statusFiltro === "2") nomeStatus = "PAGOS / RECEBIDOS";
+    if (statusFiltro === "3") nomeStatus = "GERAL (TODOS)";
+
+    const logoHtml = appConfig.logo ? `<img src="${appConfig.logo}" class="receipt-logo">` : '';
+    const printSec = document.getElementById('print-section');
+    if(printSec) {
+        printSec.innerHTML = `
+            <div class="receipt-header">
+                ${logoHtml}
+                <h2 class="receipt-title">${appConfig.nome || 'Matsucafe'}</h2>
+            </div>
+            <div class="receipt-divider"></div>
+            <div style="text-align: center;">
+                <p class="receipt-info" style="font-weight:bold; font-size: 14px;">RELATÓRIO DE VOUCHERS</p>
+                <p class="receipt-info" style="font-weight:bold; font-size: 12px; color: #555;">Status: ${nomeStatus}</p>
+                <p class="receipt-info" style="font-size: 11px;">Período: ${dataInicio.split('-').reverse().join('/')} a ${dataFim.split('-').reverse().join('/')}</p>
+            </div>
+            <div class="receipt-divider"></div>
+            ${reportHtml}
+            <div class="receipt-total" style="margin-top: 15px;"><span>TOTAL DO RELATÓRIO:</span><span>R$ ${totalReport.toFixed(2)}</span></div>
+            <div class="receipt-footer"><p style="margin-top: 40px;">___________________________________</p><p style="font-weight: bold; margin-top:5px;">ASSINATURA FINANCEIRO</p></div><br>
+        `;
+        setTimeout(() => { window.print(); }, 300);
+    }
+};
+
 function initDashboard() {
     window.dailyPaymentTotals = {};
 
@@ -798,116 +917,75 @@ function initDashboard() {
             renderProductSalesSummary();
             applyFinancePaymentFilter();
 
-            // VOUCHERS PENDENTES (LADO DIREITO)
+            // VOUCHERS PENDENTES (LADO DIREITO - AGRUPADOS E CORRIGIDOS)
+            const vouchersGrouped = {};
+            
             snapVouchers.forEach(docSnap => {
                 const pend = docSnap.data();
                 if(pend.status === 'pendente') {
                     pendenteTotal += pend.valor;
-                    if(vouchersList) {
+                    if(!vouchersGrouped[pend.colaborador]) {
+                        vouchersGrouped[pend.colaborador] = {
+                            colaborador: pend.colaborador,
+                            total: 0,
+                            items: []
+                        };
+                    }
+                    vouchersGrouped[pend.colaborador].total += pend.valor;
+                    vouchersGrouped[pend.colaborador].items.push({ id: docSnap.id, ...pend });
+                }
+            });
+
+            if (vouchersList) {
+                Object.values(vouchersGrouped).forEach(group => {
+                    const divGroup = document.createElement('div');
+                    divGroup.className = "bg-purple-50 p-5 rounded-[1.5rem] border border-purple-100 flex flex-col shadow-sm transition gap-2";
+                    
+                    let itemsHtml = '<div class="mt-3 flex flex-col gap-2 border-t border-purple-200 pt-3">';
+                    group.items.forEach(pend => {
                         let horaStrPend = '';
                         if (pend.timestamp && typeof pend.timestamp.toDate === 'function') {
                             horaStrPend = pend.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                         }
-
-                        const div = document.createElement('div');
-                        div.className = "bg-purple-50 p-5 rounded-[1.5rem] border border-purple-100 flex flex-col xl:flex-row justify-between items-start xl:items-center shadow-sm hover:shadow-md transition gap-4";
                         
-                        div.innerHTML = `
-                            <div class="flex-1">
-                                <p class="font-bold text-purple-800 text-lg">${pend.colaborador}</p>
-                                <p class="text-xs text-purple-500 font-bold mt-1">Ref: Pedido #${pend.nroPedido} ${horaStrPend ? `<span class="text-purple-400 ml-1">| 🕒 ${horaStrPend}</span>` : ''}</p>
-                            </div>
-                            <div class="text-left xl:text-right mr-2">
-                                <p class="font-black text-purple-700 text-2xl">R$ ${pend.valor.toFixed(2)}</p>
-                            </div>
-                            <div class="flex gap-2 w-full xl:w-auto justify-end">
-                                <button class="bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-print-voucher" title="Imprimir Recibo de Assinatura"><i class="ph ph-printer text-lg"></i></button>
-                                <button class="bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition p-3 rounded-xl shadow-sm btn-edit-voucher" title="Corrigir Erro (Mudar Pagamento)"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                <button class="bg-green-500 hover:bg-green-600 transition text-white font-black text-sm px-5 py-3 rounded-xl shadow-md btn-receber flex items-center gap-2"><i class="ph ph-check-circle text-lg"></i> Baixa</button>
+                        itemsHtml += `
+                            <div class="bg-white p-3 rounded-xl flex flex-wrap md:flex-nowrap justify-between items-center shadow-sm border border-purple-100 gap-2">
+                                <div class="w-full md:w-auto">
+                                    <p class="text-sm font-bold text-gray-800">Pedido #${pend.nroPedido}</p>
+                                    <p class="text-[10px] text-gray-500 font-bold">${pend.dataStr.split('-').reverse().join('/')} ${horaStrPend}</p>
+                                </div>
+                                <div class="text-left md:text-right flex-1">
+                                    <p class="font-black text-purple-600">R$ ${pend.valor.toFixed(2)}</p>
+                                </div>
+                                <div class="flex gap-2 w-full md:w-auto justify-end">
+                                    <button class="bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition p-2 rounded-lg shadow-sm" title="Corrigir Pagamento (Tirar de Voucher)" onclick="window.editVoucher('${pend.id}', '${pend.colaborador}', '${pend.nroPedido}', ${pend.valorRestaurar || pend.valor})"><i class="ph ph-pencil-simple text-sm"></i></button>
+                                    <button class="bg-green-500 hover:bg-green-600 transition text-white font-black text-xs px-3 py-2 rounded-lg shadow-sm flex items-center gap-1" onclick="window.baixaVoucher('${pend.id}')"><i class="ph ph-check-circle text-sm"></i> Baixa</button>
+                                </div>
                             </div>
                         `;
+                    });
+                    itemsHtml += `
+                        <button class="w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-xl shadow-md transition text-sm flex items-center justify-center gap-2" onclick="window.baixaTodosVouchers('${group.colaborador}')"><i class="ph ph-check-circle"></i> Dar Baixa em Todos (R$ ${group.total.toFixed(2)})</button>
+                    </div>`;
 
-                        div.querySelector('.btn-print-voucher').onclick = async () => {
-                            const vQuery = query(collection(db, "vendas"), where("nroPedido", "==", pend.nroPedido));
-                            const vSnap = await getDocs(vQuery);
-                            let itensHtml = '';
-                            if(!vSnap.empty) {
-                                const vendaObj = vSnap.docs[0].data();
-                                if(vendaObj.itens) {
-                                    vendaObj.itens.forEach(i => {
-                                        const qtde = i.qty || i.qtd || 1;
-                                        itensHtml += `<div class="receipt-item"><span>${qtde}x ${i.nome}</span><span>R$ ${(i.preco * qtde).toFixed(2)}</span></div>`;
-                                    });
-                                }
-                            }
-                            const logoHtml = appConfig.logo ? `<img src="${appConfig.logo}" class="receipt-logo">` : '';
-                            const printSec = document.getElementById('print-section');
-                            if(printSec) {
-                                printSec.innerHTML = `
-                                    <div class="receipt-header">${logoHtml}<h2 class="receipt-title">${appConfig.nome || 'Matsucafe'}</h2></div>
-                                    <div class="receipt-divider"></div>
-                                    <div style="text-align: center;"><p class="receipt-info" style="font-weight:bold; font-size: 14px;">COMPROVANTE DE VOUCHER</p><p class="receipt-info" style="font-weight:bold; font-size: 12px;">(PENDENTE DE DESCONTO)</p></div>
-                                    <div class="receipt-divider"></div>
-                                    <div style="text-align: left;">
-                                        <p class="receipt-info"><strong>Colaborador:</strong> ${pend.colaborador}</p>
-                                        <p class="receipt-info"><strong>Ref. Pedido:</strong> #${pend.nroPedido}</p>
-                                        <p class="receipt-info"><strong>Data:</strong> ${pend.dataStr.split('-').reverse().join('/')} ${horaStrPend}</p>
-                                    </div>
-                                    <div class="receipt-divider"></div>
-                                    <div style="text-align: center; font-weight: bold; font-size: 11px; margin-bottom: 5px;">ITENS CONSUMIDOS</div>
-                                    <div>${itensHtml || '<p style="text-align:center; font-size:11px;">Itens não encontrados.</p>'}</div>
-                                    <div class="receipt-divider"></div>
-                                    <div class="receipt-total"><span>VALOR TOTAL</span><span>R$ ${pend.valor.toFixed(2)}</span></div>
-                                    <div class="receipt-footer"><p style="margin-top: 40px;">___________________________________</p><p style="font-weight: bold; margin-top:5px;">ASSINATURA</p></div><br>
-                                `;
-                                setTimeout(() => { window.print(); }, 300);
-                            }
-                        };
-
-                        div.querySelector('.btn-edit-voucher').onclick = async () => {
-                            const novoPgto = prompt(`Lançamento atual: VOUCHER PENDENTE\n\nSe foi um erro do caixa e o cliente pagou na hora, digite a forma correta (Ex: PIX, Cartão, Dinheiro):`);
-                            if(novoPgto && novoPgto.trim() !== "" && !novoPgto.toLowerCase().includes('voucher')) {
-                                if(confirm(`Mudar este lançamento para ${novoPgto.trim().toUpperCase()}?\n\n- O limite do colaborador será devolvido.\n- A venda ficará como Cliente Avulso na lista principal.`)) {
-                                    const c = clients.find(cli => cli.nome === pend.colaborador);
-                                    if(c) {
-                                        const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(pend.valorRestaurar || pend.valor);
-                                        await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
-                                    }
-                                    const vQuery = query(collection(db, "vendas"), where("nroPedido", "==", pend.nroPedido));
-                                    const vSnap = await getDocs(vQuery);
-                                    if(!vSnap.empty) {
-                                        const vendaRef = vSnap.docs[0];
-                                        await updateDoc(doc(db, "vendas", vendaRef.id), { pagamento: novoPgto.trim(), cliente: "Cliente Avulso" });
-                                    }
-                                    await deleteDoc(doc(db, "vouchers_pendentes", docSnap.id));
-                                    alert("Lançamento corrigido com sucesso! O valor já está no caixa geral.");
-                                }
-                            }
-                        };
-
-                        div.querySelector('.btn-receber').onclick = async () => {
-                            if(confirm(`Confirmar recebimento financeiro de R$ ${pend.valor.toFixed(2)} referente a ${pend.colaborador}? O valor será injetado no caixa de hoje.`)) {
-                                await updateDoc(doc(db, "vouchers_pendentes", docSnap.id), { status: 'pago', dataPagamento: new Date().toISOString() });
-                                const c = clients.find(cli => cli.nome === pend.colaborador);
-                                if(c) {
-                                    const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(pend.valorRestaurar || pend.valor);
-                                    await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
-                                }
-                                const nroPagamento = Math.floor(1000 + Math.random() * 9000);
-                                await addDoc(collection(db, "vendas"), {
-                                    nroPedido: `PGTO-${nroPagamento}`, total: pend.valor, custoTotal: 0, cliente: pend.colaborador, 
-                                    pagamento: 'Recebimento Voucher', cpf: '', complemento: 0, isVoucherPgto: true,
-                                    data: serverTimestamp(), dataSimples: new Date().toISOString().split('T')[0], 
-                                    itens: [{nome: `Pgto Voucher (Ref. #${pend.nroPedido})`, qty: 1, preco: pend.valor}]
-                                });
-                                alert('Baixa realizada! O valor entrou no caixa e o limite dele foi restaurado.');
-                            }
-                        };
-
-                        vouchersList.appendChild(div);
-                    }
-                }
-            });
+                    divGroup.innerHTML = `
+                        <div class="flex justify-between items-center cursor-pointer select-none" onclick="this.nextElementSibling.classList.toggle('hidden'); const icon = this.querySelector('.toggle-icon'); icon.classList.toggle('rotate-180');">
+                            <div>
+                                <p class="font-black text-purple-800 text-lg uppercase">${group.colaborador}</p>
+                                <p class="text-xs text-purple-500 font-bold mt-1">${group.items.length} pedido(s) pendente(s)</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <p class="font-black text-purple-700 text-xl md:text-2xl">R$ ${group.total.toFixed(2)}</p>
+                                <button class="bg-purple-200 text-purple-800 p-2 rounded-lg transition-transform duration-200 toggle-icon"><i class="ph ph-caret-down"></i></button>
+                            </div>
+                        </div>
+                        <div class="hidden">
+                            ${itemsHtml}
+                        </div>
+                    `;
+                    vouchersList.appendChild(divGroup);
+                });
+            }
 
             if(document.getElementById('dash-revenue')) document.getElementById('dash-revenue').innerText = `R$ ${totalVendas.toFixed(2)}`;
             if(document.getElementById('dash-cost')) document.getElementById('dash-cost').innerText = `R$ ${totalCusto.toFixed(2)}`;
