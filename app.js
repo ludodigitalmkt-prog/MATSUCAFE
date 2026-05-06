@@ -329,6 +329,9 @@ window.loadClientHistory = async () => {
         const v = doc.data();
         if(inicio && fim && (v.dataSimples < inicio || v.dataSimples > fim)) return; 
         
+        // CORREÇÃO: Esconde as "vendas" que são apenas Baixa Financeira
+        if(v.isVoucherPgto) return;
+        
         total += v.total;
 
         let itensStr = '';
@@ -372,6 +375,10 @@ window.printClientHistory = async () => {
     snap.forEach(doc => {
         const v = doc.data();
         if(inicio && fim && (v.dataSimples < inicio || v.dataSimples > fim)) return;
+        
+        // CORREÇÃO: Esconde da impressão as baixas financeiras
+        if(v.isVoucherPgto) return;
+        
         total += v.total;
 
         let itemsHtml = '';
@@ -633,9 +640,16 @@ if(filtroDataInicio && filtroDataFim) {
 
 // Funções globais para manipulação de Vouchers
 window.baixaVoucher = async (id, colaborador, valor, nroPedido) => {
-    if(confirm(`Confirmar o RECEBIMENTO FINANCEIRO de R$ ${valor.toFixed(2)} referente a ${colaborador}?\n\nO valor entrará no faturamento de HOJE.`)) {
+    if(confirm(`Confirmar o RECEBIMENTO FINANCEIRO de R$ ${valor.toFixed(2)} referente a ${colaborador}?\n\nO limite do colaborador será restaurado e o valor entrará no faturamento de HOJE.`)) {
         await updateDoc(doc(db, "vouchers_pendentes", id), { status: 'pago', dataPagamento: new Date().toISOString() });
         
+        // CORREÇÃO: DEVOLVE O SALDO PARA O COLABORADOR
+        const c = clients.find(cli => cli.nome === colaborador);
+        if(c) {
+            const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(valor);
+            await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
+        }
+
         const nroPagamento = Math.floor(1000 + Math.random() * 9000);
         await addDoc(collection(db, "vendas"), {
             nroPedido: `PGTO-${nroPagamento}`, 
@@ -645,18 +659,18 @@ window.baixaVoucher = async (id, colaborador, valor, nroPedido) => {
             pagamento: 'Recebimento Voucher', 
             cpf: '', 
             complemento: 0, 
-            isVoucherPgto: true,
+            isVoucherPgto: true, // Isso garante que o histórico vai ocultar a entrada!
             data: serverTimestamp(), 
             dataSimples: new Date().toISOString().split('T')[0], 
             itens: [{nome: `Pgto Voucher (Ref. #${nroPedido})`, qty: 1, preco: parseFloat(valor)}]
         });
         
-        alert('Baixa realizada com sucesso! O valor já subiu no faturamento de hoje.');
+        alert('Baixa realizada com sucesso! O valor subiu no faturamento e o saldo do colaborador foi restaurado.');
     }
 };
 
 window.baixaTodosVouchers = async (colaborador) => {
-    if(confirm(`Confirmar o RECEBIMENTO FINANCEIRO de TODOS os vouchers pendentes de ${colaborador}?`)) {
+    if(confirm(`Confirmar o RECEBIMENTO FINANCEIRO de TODOS os vouchers pendentes de ${colaborador}?\n\nO limite dele será restaurado e o valor entrará no faturamento de HOJE.`)) {
         const pendQuery = query(collection(db, "vouchers_pendentes"), where("colaborador", "==", colaborador), where("status", "==", "pendente"));
         const pendSnap = await getDocs(pendQuery);
         
@@ -668,6 +682,13 @@ window.baixaTodosVouchers = async (colaborador) => {
             await updateDoc(doc(db, "vouchers_pendentes", docSnap.id), { status: 'pago', dataPagamento: new Date().toISOString() });
         });
         
+        // CORREÇÃO: DEVOLVE O SALDO TOTAL PARA O COLABORADOR
+        const c = clients.find(cli => cli.nome === colaborador);
+        if(c && valorTotal > 0) {
+            const novoSaldo = parseFloat(c.saldo_voucher || 0) + parseFloat(valorTotal);
+            await updateDoc(doc(db, "clientes", c.id), { saldo_voucher: novoSaldo });
+        }
+
         if(valorTotal > 0) {
             const nroPagamento = Math.floor(1000 + Math.random() * 9000);
             await addDoc(collection(db, "vendas"), {
@@ -678,14 +699,14 @@ window.baixaTodosVouchers = async (colaborador) => {
                 pagamento: 'Recebimento Voucher', 
                 cpf: '', 
                 complemento: 0, 
-                isVoucherPgto: true,
+                isVoucherPgto: true, // Isso garante que o histórico vai ocultar a entrada!
                 data: serverTimestamp(), 
                 dataSimples: new Date().toISOString().split('T')[0], 
                 itens: [{nome: `Pgto Múltiplo de Vouchers`, qty: 1, preco: parseFloat(valorTotal)}]
             });
         }
         
-        alert('Baixa de todos os pedidos realizada com sucesso! Faturamento atualizado.');
+        alert('Baixa de todos os pedidos realizada com sucesso! Faturamento atualizado e limite restaurado.');
     }
 };
 
